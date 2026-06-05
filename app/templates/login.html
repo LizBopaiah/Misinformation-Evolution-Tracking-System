@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Login | MET Research Platform{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-[calc(100vh-16rem)] py-6 animate-in fade-in zoom-in-95 duration-300">
+    
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-sm w-full rounded-2xl shadow-xl p-6 relative flex flex-col gap-4">
+        
+        <div class="text-center space-y-1">
+            <h1 class="font-display font-semibold text-xl text-slate-900 dark:text-white">Sign In to MET</h1>
+            <p class="text-xs text-slate-500">Access your narrative research workspace.</p>
+        </div>
+        
+        <form id="login-form" class="space-y-4" onsubmit="event.preventDefault(); handleLoginSubmit();">
+            <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-450 dark:text-slate-500 mb-1" for="login-email">Email Address</label>
+                <input type="email" id="login-email" required class="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:border-indigo-500 text-slate-800 dark:text-slate-200" placeholder="johndoe@example.com">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-450 dark:text-slate-500 mb-1" for="login-password">Password</label>
+                <input type="password" id="login-password" required class="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:border-indigo-500 text-slate-800 dark:text-slate-200" placeholder="••••••••">
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-lg shadow-indigo-500/10 transition-premium mt-2">
+                Sign In
+            </button>
+        </form>
+        
+        <div class="text-center text-xs text-slate-550 border-t border-slate-100 dark:border-slate-850 pt-3 mt-2">
+            Don't have an account? 
+            <a href="/register" class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">Register here</a>
+        </div>
+        
+    </div>
+
+</div>
+
+<script>
+    // Local script to handle submit and redirection
+    function handleLoginSubmit() {
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value.trim();
+
+        Loader.show();
+        fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        })
+        .then(res => res.json())
+        .then(data => {
+            Loader.hide();
+            if (data.success) {
+                localStorage.setItem('access_token', data.data.access_token);
+                Toast.show('Login successful! Welcome back.', 'success');
+                setTimeout(() => {
+                    // Redirect to dashboard (or deep link)
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirectUrl = urlParams.get('redirect') || '/dashboard';
+                    window.location.href = redirectUrl;
+                }, 800);
+            } else {
+                Toast.show(data.message || 'Invalid email or password.', 'error');
+            }
+        })
+        .catch(err => {
+            Loader.hide();
+            Toast.show(`Login Error: ${err.message}`, 'error');
+        });
+    }
+
+    // Auto-redirect to dashboard if token exists
+    window.addEventListener('load', () => {
+        if (localStorage.getItem('access_token')) {
+            window.location.href = '/dashboard';
+        }
+    });
+</script>
+{% endblock %}

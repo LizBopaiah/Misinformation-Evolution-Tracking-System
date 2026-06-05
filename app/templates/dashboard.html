@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard | MET Research Platform{% endblock %}
+
+{% block head_extra %}
+<script>
+    // Route Protection: Redirect unauthenticated users immediately to login page
+    if (!localStorage.getItem('access_token')) {
+        window.location.href = '/login?redirect=' + window.location.pathname;
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8 animate-in fade-in duration-300 max-w-5xl mx-auto py-4">
+
+    <!-- Top Greeting Section -->
+    <div class="p-6 md:p-8 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-gradient-to-tr from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 shadow-sm relative overflow-hidden">
+        <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-2xl"></div>
+        <div class="max-w-2xl relative z-10 space-y-2">
+            <h1 class="text-2xl font-display font-semibold tracking-tight text-slate-900 dark:text-white">
+                Welcome, <span id="user-greeting-name" class="text-indigo-600 dark:text-indigo-400">Researcher</span>
+            </h1>
+            <p class="text-slate-500 dark:text-slate-400 text-xs leading-relaxed">
+                Query claim topic threads below. System gathered data is analyzed for truth probability, mutations, and semantic sentiment tone.
+            </p>
+        </div>
+    </div>
+
+    <!-- Center Search Console -->
+    <div class="space-y-4">
+        <div class="relative bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-md focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all duration-300 p-2 flex flex-col sm:flex-row gap-2">
+            <div class="flex-grow flex items-center px-3 gap-2">
+                <svg class="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <input type="text" id="search-input" class="w-full bg-transparent text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-550 focus:outline-none" placeholder="Enter a claim, topic, or keyword...">
+            </div>
+            <button onclick="triggerAnalyze()" class="py-2.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-md shadow-indigo-500/20 transition-premium flex items-center justify-center gap-1.5 flex-shrink-0">
+                <span>Analyze</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
+        </div>
+        
+        <!-- Places Suggested Tags -->
+        <div class="flex flex-wrap items-center gap-2 text-xs text-slate-450 dark:text-slate-500">
+            <span>Query examples:</span>
+            <button onclick="selectPlaceholder('COVID vaccine infertility')" class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 transition-premium">"COVID vaccine infertility"</button>
+            <button onclick="selectPlaceholder('5G causes cancer')" class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 transition-premium">"5G causes cancer"</button>
+            <button onclick="selectPlaceholder('Climate change hoax')" class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 transition-premium">"Climate change hoax"</button>
+        </div>
+    </div>
+
+    <!-- Long-Term Workflow Result Placeholder Panel -->
+    <div id="results-placeholder-panel" class="border border-slate-200/60 dark:border-slate-800/60 rounded-3xl bg-white dark:bg-slate-900 shadow-sm overflow-hidden p-6 md:p-8 space-y-6">
+        <div class="border-b border-slate-200/60 dark:border-slate-800/60 pb-4 flex items-center justify-between">
+            <h3 class="font-display font-semibold text-base text-slate-900 dark:text-white">Analysis Summary</h3>
+            <span id="results-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider">Processed</span>
+        </div>
+
+        <!-- Initial Blank State -->
+        <div id="results-blank-state" class="text-center py-10 space-y-3">
+            <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800/80 flex items-center justify-center mx-auto text-slate-450 dark:text-slate-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+            </div>
+            <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">No analysis generated yet.</p>
+            <p class="text-xs text-slate-400 dark:text-slate-500 max-w-xs mx-auto leading-relaxed">Search for a topic, claim, headline, or keyword to begin.</p>
+        </div>
+
+        <!-- Dynamic analysis mock result structure -->
+        <div id="results-data-state" class="hidden space-y-6 animate-in fade-in duration-300">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <div class="md:col-span-2 space-y-3">
+                    <h4 class="text-sm font-semibold text-indigo-500 uppercase tracking-wider text-[11px]">Narrative Summary</h4>
+                    <p id="mock-summary-text" class="text-sm text-slate-650 dark:text-slate-350 leading-relaxed font-medium">
+                        Placeholder summary text representing collected news articles regarding the queried topic. This summaries layer will be generated dynamically using the Gemini API.
+                    </p>
+                </div>
+
+                <div class="border border-slate-100 dark:border-slate-850 rounded-2xl p-4 bg-slate-50 dark:bg-slate-950/20 space-y-3">
+                    <h4 class="text-[11px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Fact Audit Profile</h4>
+                    
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between">
+                            <span class="text-slate-450">Veracity Rating:</span>
+                            <span id="mock-rating" class="font-bold text-rose-500">Misleading / False</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-450">Source Reliability:</span>
+                            <span class="font-semibold text-slate-700 dark:text-slate-350">Moderate (65%)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-450">Articles Collected:</span>
+                            <span class="font-semibold text-slate-700 dark:text-slate-350">42 references</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Choose analysis triggers workflow -->
+            <div class="border-t border-slate-200/60 dark:border-slate-800/60 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <span class="text-xs text-slate-400 dark:text-slate-500 font-medium">Select an advanced analysis pipeline below to continue:</span>
+                <div class="flex gap-3 w-full sm:w-auto">
+                    <button onclick="generateSentimentAnalysis()" class="flex-grow sm:flex-grow-0 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-premium flex items-center justify-center gap-1.5">
+                        <span>📊 Generate Sentiment Analysis</span>
+                    </button>
+                    <button onclick="generateEvolutionAnalysis()" class="flex-grow sm:flex-grow-0 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-850 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-semibold transition-premium flex items-center justify-center gap-1.5">
+                        <span>📈 Generate Evolution Analysis</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Searches Section -->
+    <div class="space-y-4">
+        <h2 class="font-display font-semibold text-sm tracking-tight text-slate-900 dark:text-white px-1">Recent Searches</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            
+            <div onclick="selectPlaceholder('COVID vaccine infertility')" class="p-4 rounded-xl border border-slate-200/60 dark:border-slate-800/60 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-850 shadow-xs cursor-pointer transition-premium space-y-1.5">
+                <div class="flex items-center justify-between text-[10px]">
+                    <span class="font-bold text-rose-500">False Claim</span>
+                    <span class="text-slate-400">1h ago</span>
+                </div>
+                <h4 class="text-xs font-bold text-slate-850 dark:text-slate-200">COVID vaccine infertility</h4>
+                <p class="text-[10px] text-slate-450 dark:text-slate-550 truncate">Claim: The vaccines trigger autoimmune response affecting reproductive organs...</p>
+            </div>
+
+            <div onclick="selectPlaceholder('5G causes cancer')" class="p-4 rounded-xl border border-slate-200/60 dark:border-slate-800/60 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-850 shadow-xs cursor-pointer transition-premium space-y-1.5">
+                <div class="flex items-center justify-between text-[10px]">
+                    <span class="font-bold text-rose-500">Misleading</span>
+                    <span class="text-slate-400">3h ago</span>
+                </div>
+                <h4 class="text-xs font-bold text-slate-850 dark:text-slate-200">5G causes cancer</h4>
+                <p class="text-[10px] text-slate-450 dark:text-slate-550 truncate">Claim: High-frequency millimeter waves trigger cellular degradation...</p>
+            </div>
+
+            <div onclick="selectPlaceholder('Climate change hoax')" class="p-4 rounded-xl border border-slate-200/60 dark:border-slate-800/60 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-850 shadow-xs cursor-pointer transition-premium space-y-1.5">
+                <div class="flex items-center justify-between text-[10px]">
+                    <span class="font-bold text-slate-500">Unverified</span>
+                    <span class="text-slate-400">Yesterday</span>
+                </div>
+                <h4 class="text-xs font-bold text-slate-850 dark:text-slate-200">Climate change hoax</h4>
+                <p class="text-[10px] text-slate-450 dark:text-slate-550 truncate">Claim: Global temperature averages are manipulated to influence green policies...</p>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function selectPlaceholder(val) {
+        document.getElementById('search-input').value = val;
+        Toast.show(`Selected suggested topic: "${val}"`, "info");
+    }
+
+    function triggerAnalyze() {
+        const query = document.getElementById('search-input').value.trim();
+        if (!query) {
+            Toast.show("Please enter a claim or topic keyword first.", "warning");
+            return;
+        }
+
+        Loader.show();
+        setTimeout(() => {
+            Loader.hide();
+            
+            document.getElementById('mock-summary-text').innerText = `Gemini Summary: "${query}" represents a widely discussed claim. Our database gathered 42 related articles mapping this topic. Initial audits indicate significant framing deviations.`;
+            document.getElementById('mock-rating').innerText = query.toLowerCase().includes('infertility') || query.toLowerCase().includes('hoax') || query.toLowerCase().includes('cancer') ? "Misleading / False" : "Unverified / Pending Audit";
+            
+            document.getElementById('results-blank-state').classList.add('hidden');
+            document.getElementById('results-data-state').classList.remove('hidden');
+            document.getElementById('results-badge').classList.remove('hidden');
+            
+            Toast.show(`Gathered articles and generated narrative summary for: "${query}"`, "success");
+        }, 1000);
+    }
+
+    function generateSentimentAnalysis() {
+        Loader.show();
+        setTimeout(() => {
+            Loader.hide();
+            Toast.show("Sentiment & emotional manipulation metrics calculated (Module 2 Model active).", "success");
+        }, 800);
+    }
+
+    function generateEvolutionAnalysis() {
+        Loader.show();
+        setTimeout(() => {
+            Loader.hide();
+            Toast.show("Narrative mutation evolution tree traced in DB (Module 3 Model active).", "success");
+        }, 900);
+    }
+
+    // Set greeting name dynamically
+    window.addEventListener('load', () => {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            fetch('/api/users/profile', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('user-greeting-name').innerText = data.data.full_name || data.data.username;
+                }
+            })
+            .catch(() => {});
+        }
+    });
+</script>
+{% endblock %}

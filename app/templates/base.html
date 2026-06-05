@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en" class="transition-premium">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MET - Misinformation Detection & Evolution Tracking{% endblock %}</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="A premium research platform to track narrative evolution, factuality, and sentiment manipulation in news content.">
+    <meta name="author" content="MET Research Platform Team">
+    
+    <!-- CSS Dependencies -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Tailwind CSS Setup -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#070a13'
+                        },
+                        indigo: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                        display: ['Outfit', '-apple-system', 'BlinkMacSystemFont', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    {% block head_extra %}{% endblock %}
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 min-h-screen flex flex-col font-sans transition-premium antialiased">
+
+    <!-- Top Navigation Bar -->
+    <nav class="sticky top-0 z-40 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                
+                <!-- Logo & Brand -->
+                <div class="flex items-center gap-3">
+                    <a id="logo-link" href="/" class="flex items-center gap-2 group">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-display font-bold text-lg shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-premium">
+                            M
+                        </div>
+                        <span class="font-display font-semibold text-lg tracking-tight text-slate-900 dark:text-white">MET <span class="text-xs text-indigo-500 font-normal ml-0.5">Research</span></span>
+                    </a>
+                </div>
+
+                <!-- Auth-Aware Navigation Links -->
+                <div class="flex items-center gap-6 text-sm font-medium">
+                    
+                    <!-- 1. VISITOR NAVBAR -->
+                    <div id="nav-logged-out" class="hidden md:flex items-center gap-6 text-slate-500 dark:text-slate-400">
+                        <a href="/" class="hover:text-slate-900 dark:hover:text-white transition-premium">Home</a>
+                        <a href="/about-platform" class="hover:text-slate-900 dark:hover:text-white transition-premium">About Platform</a>
+                    </div>
+                    
+                    <!-- 2. AUTHENTICATED NAVBAR -->
+                    <div id="nav-logged-in" class="hidden md:flex items-center gap-6 text-slate-500 dark:text-slate-400">
+                        <a href="/dashboard" class="hover:text-slate-900 dark:hover:text-white transition-premium">Dashboard</a>
+                        <a href="/search-history" class="hover:text-slate-900 dark:hover:text-white transition-premium">Search History</a>
+                        <a href="/profile" class="hover:text-slate-900 dark:hover:text-white transition-premium">Profile</a>
+                        <a href="/about-platform" class="hover:text-slate-900 dark:hover:text-white transition-premium">About Platform</a>
+                        <a href="/system-overview" class="hover:text-slate-900 dark:hover:text-white transition-premium">System Overview</a>
+                    </div>
+
+                    <span class="hidden md:inline w-px h-4 bg-slate-200 dark:bg-slate-800"></span>
+                    
+                    <!-- Theme Toggle -->
+                    <button id="theme-toggle" class="p-2 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-250 transition-premium" aria-label="Toggle Theme">
+                        <svg class="w-4 h-4 dark:hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                        <svg class="w-4 h-4 hidden dark:block text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.46 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clip-rule="evenodd"></path></svg>
+                    </button>
+                    
+                    <!-- Visitor Actions -->
+                    <div id="auth-actions" class="flex items-center gap-2">
+                        <a href="/login" class="px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-premium">Login</a>
+                        <a href="/register" class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md shadow-indigo-500/10 transition-premium">Register</a>
+                    </div>
+
+                    <!-- Authenticated User Avatar Dropdown -->
+                    <div id="user-profile-avatar" class="hidden relative group cursor-pointer">
+                        <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 border border-indigo-500 flex items-center justify-center font-display font-medium text-sm text-indigo-600 dark:text-indigo-400">
+                            U
+                        </div>
+                        <div class="absolute right-0 mt-2 w-48 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 p-1 font-sans">
+                            <a href="/profile" class="block w-full text-left px-3 py-2 text-xs rounded hover:bg-slate-100 dark:hover:bg-slate-800 font-medium">My Profile</a>
+                            <button onclick="handleLogout()" class="w-full text-left px-3 py-2 text-xs rounded text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 font-medium">Logout</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content Wrapper -->
+    <div class="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Global Loader Indicator -->
+        <div id="global-loader" class="hidden flex items-center justify-center py-8">
+            <div class="relative w-10 h-10 animate-spin">
+                <div class="absolute inset-0 rounded-full border-4 border-indigo-500/20"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-t-indigo-600 animate-pulse"></div>
+            </div>
+        </div>
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Platform Footer -->
+    <footer class="border-t border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 py-6 text-center text-xs text-slate-450 dark:text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p>&copy; 2026 MET Platform. Built for misinformation research, narrative mutation audits, and emotional tone extraction.</p>
+            <div class="flex items-center gap-4 text-slate-450">
+                <a href="/about-platform" class="hover:text-indigo-500 transition-premium">About Platform</a>
+                <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                <a href="#" class="hover:text-indigo-500 transition-premium">Terms of Service</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JS Scripts -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        function updateNavigationState() {
+            const token = localStorage.getItem('access_token');
+            const loggedInLinks = document.getElementById('nav-logged-in');
+            const loggedOutLinks = document.getElementById('nav-logged-out');
+            const authActions = document.getElementById('auth-actions');
+            const profileAvatar = document.getElementById('user-profile-avatar');
+            const logoLink = document.getElementById('logo-link');
+
+            if (token) {
+                if (loggedInLinks) loggedInLinks.classList.remove('hidden');
+                if (loggedOutLinks) loggedOutLinks.classList.add('hidden');
+                if (authActions) authActions.classList.add('hidden');
+                if (profileAvatar) profileAvatar.classList.remove('hidden');
+                if (logoLink) logoLink.href = '/dashboard';
+            } else {
+                if (loggedInLinks) loggedInLinks.classList.add('hidden');
+                if (loggedOutLinks) loggedOutLinks.classList.remove('hidden');
+                if (authActions) authActions.classList.remove('hidden');
+                if (profileAvatar) profileAvatar.classList.add('hidden');
+                if (logoLink) logoLink.href = '/';
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('access_token');
+            Toast.show('You have successfully logged out.', 'info');
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 800);
+        }
+
+        // Initialize nav layout
+        window.addEventListener('load', () => {
+            updateNavigationState();
+            
+            // Check credentials if token is present
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                fetch('/api/users/profile', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const initials = (data.data.full_name || data.data.username).substring(0, 2).toUpperCase();
+                        document.querySelector('#user-profile-avatar div').innerText = initials;
+                    } else {
+                        localStorage.removeItem('access_token');
+                        updateNavigationState();
+                    }
+                })
+                .catch(() => {
+                    localStorage.removeItem('access_token');
+                    updateNavigationState();
+                });
+            }
+        });
+    </script>
+    {% block scripts_extra %}{% endblock %}
+</body>
+</html>

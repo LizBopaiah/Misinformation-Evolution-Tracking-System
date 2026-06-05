@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Register | MET Research Platform{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-[calc(100vh-16rem)] py-6 animate-in fade-in zoom-in-95 duration-300">
+    
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-sm w-full rounded-2xl shadow-xl p-6 relative flex flex-col gap-4">
+        
+        <div class="text-center space-y-1">
+            <h1 class="font-display font-semibold text-xl text-slate-900 dark:text-white">Create Account</h1>
+            <p class="text-xs text-slate-500">Sign up to begin auditing claims and tracking evolution.</p>
+        </div>
+        
+        <form id="register-form" class="space-y-3.5" onsubmit="event.preventDefault(); handleRegisterSubmit();">
+            <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-450 dark:text-slate-500 mb-1" for="reg-fullname">Full Name</label>
+                <input type="text" id="reg-fullname" required class="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:border-indigo-500 text-slate-800 dark:text-slate-200" placeholder="John Doe">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-450 dark:text-slate-500 mb-1" for="reg-email">Email Address</label>
+                <input type="email" id="reg-email" required class="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:border-indigo-500 text-slate-800 dark:text-slate-200" placeholder="john@example.com">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-450 dark:text-slate-500 mb-1" for="reg-password">Password</label>
+                <input type="password" id="reg-password" required class="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:border-indigo-500 text-slate-800 dark:text-slate-200" placeholder="••••••••">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-450 dark:text-slate-500 mb-1" for="reg-confirm">Confirm Password</label>
+                <input type="password" id="reg-confirm" required class="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:border-indigo-500 text-slate-800 dark:text-slate-200" placeholder="••••••••">
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-lg shadow-indigo-500/10 transition-premium mt-3">
+                Register & Sign In
+            </button>
+        </form>
+        
+        <div class="text-center text-xs text-slate-555 border-t border-slate-100 dark:border-slate-855 pt-3 mt-2">
+            Already have an account? 
+            <a href="/login" class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">Sign In here</a>
+        </div>
+        
+    </div>
+
+</div>
+
+<script>
+    function handleRegisterSubmit() {
+        const full_name = document.getElementById('reg-fullname').value.trim();
+        const email = document.getElementById('reg-email').value.trim();
+        const password = document.getElementById('reg-password').value.trim();
+        const confirm_password = document.getElementById('reg-confirm').value.trim();
+
+        if (password !== confirm_password) {
+            Toast.show('Passwords do not match.', 'error');
+            return;
+        }
+
+        Loader.show();
+        fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ full_name, email, password, confirm_password })
+        })
+        .then(res => res.json())
+        .then(data => {
+            Loader.hide();
+            if (data.success) {
+                // Auto-login: Store JWT token returned on successful signup
+                localStorage.setItem('access_token', data.data.access_token);
+                Toast.show('Account created successfully! Welcome to MET.', 'success');
+                setTimeout(() => {
+                    // Redirect directly to dashboard
+                    window.location.href = '/dashboard';
+                }, 800);
+            } else {
+                Toast.show(data.message || 'Registration failed.', 'error');
+            }
+        })
+        .catch(err => {
+            Loader.hide();
+            Toast.show(`Registration Error: ${err.message}`, 'error');
+        });
+    }
+
+    // Auto-redirect to dashboard if token exists
+    window.addEventListener('load', () => {
+        if (localStorage.getItem('access_token')) {
+            window.location.href = '/dashboard';
+        }
+    });
+</script>
+{% endblock %}

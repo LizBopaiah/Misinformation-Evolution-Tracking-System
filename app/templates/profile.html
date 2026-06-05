@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile | MET Research Platform{% endblock %}
+
+{% block head_extra %}
+<script>
+    // Route Protection: Redirect unauthenticated users immediately to login page
+    if (!localStorage.getItem('access_token')) {
+        window.location.href = '/login?redirect=' + window.location.pathname;
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto py-8 space-y-6 animate-in fade-in zoom-in-95 duration-300">
+
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+        
+        <!-- Profile Header -->
+        <div class="px-6 py-6 border-b border-slate-250/60 dark:border-slate-800/60 bg-gradient-to-tr from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-indigo-600 border border-white dark:border-slate-900 flex items-center justify-center font-display font-medium text-lg text-white shadow-md">
+                <span id="profile-avatar-initials">U</span>
+            </div>
+            <div>
+                <h1 id="profile-display-name" class="font-display font-bold text-lg text-slate-900 dark:text-white">Researcher Name</h1>
+                <p id="profile-display-email" class="text-xs text-slate-500 dark:text-slate-400">researcher@example.com</p>
+            </div>
+        </div>
+
+        <!-- Details Grid -->
+        <div class="p-6 space-y-6">
+            
+            <div class="grid grid-cols-2 gap-4 text-xs border-b border-slate-100 dark:border-slate-850 pb-4">
+                <div>
+                    <span class="text-slate-450 block font-medium mb-0.5">Account Status:</span>
+                    <span class="text-emerald-500 font-bold flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
+                    </span>
+                </div>
+                <div>
+                    <span class="text-slate-450 block font-medium mb-0.5">Account Created:</span>
+                    <span id="profile-created-date" class="text-slate-700 dark:text-slate-300 font-semibold font-mono">2026-06-05</span>
+                </div>
+            </div>
+
+            <!-- Edit Form panel (inactive placeholder inputs for Module 2 updates) -->
+            <form id="profile-edit-form" class="space-y-4" onsubmit="event.preventDefault(); triggerProfileUpdate();">
+                <div class="border-b border-slate-100 dark:border-slate-850 pb-2">
+                    <h3 class="font-display font-semibold text-xs text-slate-900 dark:text-white">Edit Profile Details</h3>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-450 dark:text-slate-500 mb-1" for="edit-fullname">Full Name</label>
+                    <input type="text" id="edit-fullname" required class="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:border-indigo-500 text-slate-800 dark:text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-450 dark:text-slate-500 mb-1" for="edit-email">Email Address</label>
+                    <input type="email" id="edit-email" required class="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:border-indigo-500 text-slate-800 dark:text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-450 dark:text-slate-500 mb-1" for="edit-password">New Password (Optional)</label>
+                    <input type="password" id="edit-password" class="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:border-indigo-500 text-slate-800 dark:text-slate-200" placeholder="Leave blank to keep current">
+                </div>
+                <button type="submit" class="w-full py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-semibold text-sm shadow-sm transition-premium mt-2">
+                    Save Changes
+                </button>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Fetch user profile metrics on startup
+    window.addEventListener('load', () => {
+        const token = localStorage.getItem('access_token');
+        if (!token) return;
+
+        Loader.show();
+        fetch('/api/users/profile', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(data => {
+            Loader.hide();
+            if (data.success) {
+                const user = data.data;
+                const name = user.full_name || user.username;
+                
+                document.getElementById('profile-display-name').innerText = name;
+                document.getElementById('profile-display-email').innerText = user.email;
+                document.getElementById('edit-fullname').value = name;
+                document.getElementById('edit-email').value = user.email;
+                
+                // Format dates safely
+                if (user.created_at) {
+                    const dateStr = user.created_at.split('T')[0];
+                    document.getElementById('profile-created-date').innerText = dateStr;
+                }
+                
+                // Set initials
+                const initials = name.substring(0, 2).toUpperCase();
+                document.getElementById('profile-avatar-initials').innerText = initials;
+            } else {
+                Toast.show("Failed to retrieve profile credentials.", "error");
+            }
+        })
+        .catch(err => {
+            Loader.hide();
+            Toast.show(`Connection Error: ${err.message}`, "error");
+        });
+    });
+
+    // Save changes
+    function triggerProfileUpdate() {
+        const token = localStorage.getItem('access_token');
+        const full_name = document.getElementById('edit-fullname').value.trim();
+        const email = document.getElementById('edit-email').value.trim();
+        const password = document.getElementById('edit-password').value.trim();
+
+        const payload = { full_name, email };
+        if (password) payload.password = password;
+
+        Loader.show();
+        fetch('/api/users/profile', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            Loader.hide();
+            if (data.success) {
+                Toast.show("Profile credentials saved successfully.", "success");
+                setTimeout(() => {
+                    window.location.reload();
+                }, 800);
+            } else {
+                Toast.show(data.message || "Update request failed.", "error");
+            }
+        })
+        .catch(err => {
+            Loader.hide();
+            Toast.show(`Update Error: ${err.message}`, "error");
+        });
+    }
+</script>
+{% endblock %}

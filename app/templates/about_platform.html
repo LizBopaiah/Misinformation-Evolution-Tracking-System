@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}About Platform | MET Research Platform{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 space-y-12 animate-in fade-in duration-300">
+
+    <!-- Header Section -->
+    <div class="text-center space-y-3 max-w-2xl mx-auto">
+        <h1 class="text-3xl font-display font-bold tracking-tight text-slate-900 dark:text-white">Platform Capabilities</h1>
+        <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+            The Misinformation Detection & Evolution Tracking System leverages NLP, semantic similarity checks, and network graph models to audit information veracity.
+        </p>
+    </div>
+
+    <!-- Capabilities Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+        
+        <div class="space-y-2">
+            <h3 class="font-display font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <span class="text-indigo-500">✔️</span> Fact Verification
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Connects to fact repositories (e.g. PolitiFact and Snopes via LIAR benchmark parameters) and evaluates statements to calculate truth probabilities.
+            </p>
+        </div>
+
+        <div class="space-y-2">
+            <h3 class="font-display font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <span class="text-indigo-500">📊</span> Sentiment Analysis
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Evaluates document tone scores and categorizes emotional markers (anxiety, hostility, surprise) to identify emotional manipulation.
+            </p>
+        </div>
+
+        <div class="space-y-2">
+            <h3 class="font-display font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <span class="text-indigo-500">📈</span> Evolution Tracking
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Traces structural mutation trees of claims showing how news stories adapted, exaggerated, or altered over time across media.
+            </p>
+        </div>
+
+        <div class="space-y-2">
+            <h3 class="font-display font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <span class="text-indigo-500">🧬</span> Narrative Mutation Detection
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Monitors rewordings and linguistic updates used to spread distorted messages while bypassing platform blockers.
+            </p>
+        </div>
+
+        <div class="space-y-2">
+            <h3 class="font-display font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <span class="text-indigo-500">🕸️</span> Knowledge Graph Analysis
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Extracts entity relations and maps semantic triplets to draw narrative relational maps showing how actors are interconnected.
+            </p>
+        </div>
+
+        <div class="space-y-2">
+            <h3 class="font-display font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <span class="text-indigo-500">🏛️</span> Source Reliability Assessment
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Tracks publication history metrics, references integrity index datasets, and flags known biased networks.
+            </p>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

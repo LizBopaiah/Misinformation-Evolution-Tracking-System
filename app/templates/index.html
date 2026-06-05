@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}MET - Misinformation Detection & Evolution Tracking Research Platform{% endblock %}
+
+{% block content %}
+<div class="space-y-20 animate-in fade-in duration-300 py-8 max-w-5xl mx-auto">
+
+    <!-- 1. Hero Section -->
+    <div class="text-center space-y-6 max-w-4xl mx-auto py-6">
+        <span class="text-xs px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-semibold tracking-wide font-display border border-indigo-100 dark:border-indigo-950/50">
+            Platform Alpha Release
+        </span>
+        <h1 class="text-4xl md:text-6xl font-display font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
+            Misinformation Detection &<br class="hidden md:inline"> Evolution Tracking System
+        </h1>
+        <p class="text-slate-500 dark:text-slate-400 text-sm md:text-lg leading-relaxed max-w-3xl mx-auto">
+            A secure, production-grade research platform engineered to verify document claims, trace narrative mutation lines across social streams, and track semantic emotional drift over time.
+        </p>
+        <div class="flex items-center justify-center gap-4 pt-4">
+            <button onclick="handleGetStarted()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-premium">
+                Get Started
+            </button>
+            <a href="/about-platform" class="px-6 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-sm font-semibold transition-premium">
+                Learn More
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. Features Grid Section -->
+    <div class="space-y-8">
+        <div class="text-center space-y-2">
+            <h2 class="font-display font-bold text-2xl text-slate-900 dark:text-white">Core Research Capabilities</h2>
+            <p class="text-xs md:text-sm text-slate-450 dark:text-slate-500">Advanced analytical components deployed in the MET architecture.</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <div class="p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 shadow-xs space-y-2 hover:shadow-md transition-premium">
+                <span class="text-2xl">✔️</span>
+                <h3 class="font-display font-semibold text-sm text-slate-900 dark:text-white">Fact Verification</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Audits claim statements against verified databases and computes truth reliability scores dynamically.
+                </p>
+            </div>
+
+            <div class="p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 shadow-xs space-y-2 hover:shadow-md transition-premium">
+                <span class="text-2xl">📊</span>
+                <h3 class="font-display font-semibold text-sm text-slate-900 dark:text-white">Sentiment Analysis</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Tracks emotional manipulation patterns and assesses core tones (anger, joy, anxiety) inside document contents.
+                </p>
+            </div>
+
+            <div class="p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 shadow-xs space-y-2 hover:shadow-md transition-premium">
+                <span class="text-2xl">📈</span>
+                <h3 class="font-display font-semibold text-sm text-slate-900 dark:text-white">Evolution Tracking</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Constructs lineage mutator trees demonstrating how claims exaggerate, adapt, and migrate over time.
+                </p>
+            </div>
+
+            <div class="p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 shadow-xs space-y-2 hover:shadow-md transition-premium">
+                <span class="text-2xl">🧬</span>
+                <h3 class="font-display font-semibold text-sm text-slate-900 dark:text-white">Narrative Mutation Detection</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Flags micro-linguistic updates and rephrasings used to bypass standard news moderation checkers.
+                </p>
+            </div>
+
+            <div class="p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 shadow-xs space-y-2 hover:shadow-md transition-premium">
+                <span class="text-2xl">🕸️</span>
+                <h3 class="font-display font-semibold text-sm text-slate-900 dark:text-white">Knowledge Graph Analysis</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Extracts subject-predicate-object triplets to construct relational network maps of evolving claims.
+                </p>
+            </div>
+
+            <div class="p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 shadow-xs space-y-2 hover:shadow-md transition-premium">
+                <span class="text-2xl">🏛️</span>
+                <h3 class="font-display font-semibold text-sm text-slate-900 dark:text-white">Source Reliability Assessment</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Audits historically tracked domains and indices to verify publisher credibility and bias factors.
+                </p>
+            </div>
+
+            <div class="p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 shadow-xs space-y-2 hover:shadow-md transition-premium mx-auto md:col-span-2 lg:col-span-1 max-w-sm w-full md:max-w-none">
+                <span class="text-2xl">👥</span>
+                <h3 class="font-display font-semibold text-sm text-slate-900 dark:text-white">Misinformation Family Detection</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Groups similar queries to identify coordinated media manipulation campaigns and thematic families.
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 3. How It Works Timeline -->
+    <div class="space-y-8">
+        <div class="text-center space-y-2">
+            <h2 class="font-display font-bold text-2xl text-slate-900 dark:text-white">Scientific Research Flow</h2>
+            <p class="text-xs md:text-sm text-slate-450 dark:text-slate-500">The structured timeline executed under the MET research core.</p>
+        </div>
+        <div class="relative border-l-2 border-indigo-200 dark:border-indigo-950/60 pl-6 space-y-8 max-w-2xl mx-auto my-6">
+            
+            <div class="relative">
+                <span class="absolute -left-8.5 top-1.5 w-4 h-4 rounded-full bg-indigo-600 border-4 border-white dark:border-slate-950"></span>
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white">1. Search Topic</h4>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5">Input your target search topic, claim keyword, or headline statement.</p>
+            </div>
+
+            <div class="relative">
+                <span class="absolute -left-8.5 top-1.5 w-4 h-4 rounded-full bg-indigo-550 border-4 border-white dark:border-slate-950"></span>
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white">2. Collect Articles</h4>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5">MET search services query preloaded datasets and crawl digital publications.</p>
+            </div>
+
+            <div class="relative">
+                <span class="absolute -left-8.5 top-1.5 w-4 h-4 rounded-full bg-indigo-500 border-4 border-white dark:border-slate-950"></span>
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white">3. Generate Summary</h4>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5">Generates an aggregate overview summary of collected documents.</p>
+            </div>
+
+            <div class="relative">
+                <span class="absolute -left-8.5 top-1.5 w-4 h-4 rounded-full bg-indigo-450 border-4 border-white dark:border-slate-950"></span>
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white">4. Verify Claims</h4>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5">Claims are verified by auditing fact-check metadata records.</p>
+            </div>
+
+            <div class="relative">
+                <span class="absolute -left-8.5 top-1.5 w-4 h-4 rounded-full bg-indigo-400 border-4 border-white dark:border-slate-950"></span>
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white">5. Analyze Evolution</h4>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5">Launches emotional tone vectors and visualizes narrative tree branches.</p>
+            </div>
+
+            <div class="relative">
+                <span class="absolute -left-8.5 top-1.5 w-4 h-4 rounded-full bg-indigo-350 border-4 border-white dark:border-slate-950"></span>
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white">6. Export Results</h4>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5">Export structured data tables or compiled PDF research dossiers.</p>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function handleGetStarted() {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            window.location.href = '/dashboard';
+        } else {
+            window.location.href = '/register';
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,36 @@
+# Core Web Framework
+Flask>=3.0.2
+Flask-SQLAlchemy>=3.1.1
+Flask-Migrate>=4.0.7
+Flask-JWT-Extended>=4.6.0
+python-dotenv>=1.0.1
+Werkzeug>=3.0.1
+bcrypt>=4.1.2
+
+# Networking & Scraping
+requests>=2.31.0
+beautifulsoup4>=4.12.3
+urllib3>=2.0.7
+
+# Search & LLM API Integration
+google-api-python-client>=2.120.0
+google-generativeai>=0.4.0
+
+# Data Engineering & Science
+numpy>=1.26.4
+pandas>=2.2.1
+scikit-learn>=1.4.1.post1
+
+# NLP (Natural Language Processing)
+nltk>=3.8.1
+spacy>=3.7.4
+
+# Visualization & Knowledge Graph
+matplotlib>=3.8.3
+seaborn>=0.13.2
+plotly>=5.19.0
+networkx>=3.2.1
+
+# Utilities
+pydantic>=2.6.3
+gunicorn>=21.2.0
