@@ -27,3 +27,8 @@ class Config:
     # Central Logging Directory
     LOG_DIR = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'logs')
     LOG_FILE = os.path.join(LOG_DIR, 'application.log')
+
+    # File Upload Settings
+    UPLOAD_FOLDER = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'uploads', 'profile_pictures')
+    MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB
+

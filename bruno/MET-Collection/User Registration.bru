@@ -12,8 +12,24 @@ post {
 
 body:json {
   {
-    "username": "testuser",
+    "full_name": "Test User",
     "email": "testuser@example.com",
-    "password": "strongpassword123"
+    "password": "strongpassword123",
+    "confirm_password": "strongpassword123"
+  }
+}
+
+tests {
+  test("Registration should be successful", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const data = res.getBody().data;
+    if (data && data.access_token) {
+      bru.setEnvVar("token", data.access_token);
+    }
   }
 }

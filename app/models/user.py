@@ -10,6 +10,8 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     full_name = db.Column(db.String(120), nullable=True)
     password_hash = db.Column(db.String(256), nullable=False)
+    profile_picture = db.Column(db.String(256), nullable=True)
+    last_login = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=db.func.now(), nullable=False)
     updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now(), nullable=False)
 
@@ -31,6 +33,8 @@ class User(db.Model):
             'username': self.username,
             'email': self.email,
             'full_name': self.full_name,
+            'profile_picture': self.profile_picture,
+            'last_login': self.last_login.isoformat() if self.last_login else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

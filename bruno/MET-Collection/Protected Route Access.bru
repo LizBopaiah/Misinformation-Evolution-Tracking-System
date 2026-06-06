@@ -1,0 +1,17 @@
+meta {
+  name: Protected Route Access
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/users/profile
+  body: none
+  auth: none
+}
+
+tests {
+  test("Accessing profile without token should be unauthorized", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

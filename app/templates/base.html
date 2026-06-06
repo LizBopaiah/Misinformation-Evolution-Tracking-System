@@ -100,8 +100,9 @@
 
                     <!-- Authenticated User Avatar Dropdown -->
                     <div id="user-profile-avatar" class="hidden relative group cursor-pointer">
-                        <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 border border-indigo-500 flex items-center justify-center font-display font-medium text-sm text-indigo-600 dark:text-indigo-400">
-                            U
+                        <div id="user-profile-avatar-circle" class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 border border-indigo-500 flex items-center justify-center font-display font-medium text-sm text-indigo-600 dark:text-indigo-400 overflow-hidden">
+                            <span id="user-profile-avatar-initials">U</span>
+                            <img id="user-profile-avatar-img" class="w-full h-full object-cover hidden" src="" alt="Avatar">
                         </div>
                         <div class="absolute right-0 mt-2 w-48 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 p-1 font-sans">
                             <a href="/profile" class="block w-full text-left px-3 py-2 text-xs rounded hover:bg-slate-100 dark:hover:bg-slate-800 font-medium">My Profile</a>
@@ -143,6 +144,55 @@
     <!-- JS Scripts -->
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     <script>
+        // Initials-based avatar helper
+        function getInitials(name) {
+            if (!name) return 'U';
+            const cleanName = name.trim();
+            if (!cleanName) return 'U';
+            const parts = cleanName.split(/\s+/);
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            }
+            return parts[0].substring(0, 2).toUpperCase();
+        }
+
+        // Global Fetch Interceptor for JWT handling
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            let [resource, config] = args;
+            
+            // Automatically inject Bearer token if it exists in localStorage
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                config = config || {};
+                config.headers = config.headers || {};
+                if (!(config.headers instanceof Headers) && !config.headers['Authorization']) {
+                    config.headers['Authorization'] = `Bearer ${token}`;
+                }
+            }
+            
+            try {
+                const response = await originalFetch(resource, config);
+                if (response.status === 401) {
+                    const path = window.location.pathname;
+                    if (path !== '/login' && path !== '/register' && path !== '/') {
+                        localStorage.removeItem('access_token');
+                        updateNavigationState();
+                        Toast.show('Session expired. Please log in again.', 'warning');
+                        setTimeout(() => {
+                            window.location.href = `/login?redirect=${encodeURIComponent(path)}`;
+                        }, 1200);
+                    } else if (path === '/login' || path === '/register') {
+                        localStorage.removeItem('access_token');
+                    }
+                }
+                return response;
+            } catch (err) {
+                console.error("Fetch interceptor error:", err);
+                throw err;
+            }
+        };
+
         function updateNavigationState() {
             const token = localStorage.getItem('access_token');
             const loggedInLinks = document.getElementById('nav-logged-in');
@@ -167,11 +217,24 @@
         }
 
         function handleLogout() {
-            localStorage.removeItem('access_token');
-            Toast.show('You have successfully logged out.', 'info');
-            setTimeout(() => {
-                window.location.href = '/login';
-            }, 800);
+            const token = localStorage.getItem('access_token');
+            const performLocalLogout = () => {
+                localStorage.removeItem('access_token');
+                updateNavigationState();
+                Toast.show('You have successfully logged out.', 'success');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 800);
+            };
+
+            if (token) {
+                // Call backend logout endpoint
+                fetch('/api/auth/logout', { method: 'POST' })
+                .then(performLocalLogout)
+                .catch(performLocalLogout);
+            } else {
+                performLocalLogout();
+            }
         }
 
         // Initialize nav layout
@@ -181,14 +244,33 @@
             // Check credentials if token is present
             const token = localStorage.getItem('access_token');
             if (token) {
-                fetch('/api/users/profile', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
+                fetch('/api/users/profile')
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        const initials = (data.data.full_name || data.data.username).substring(0, 2).toUpperCase();
-                        document.querySelector('#user-profile-avatar div').innerText = initials;
+                        const user = data.data;
+                        const name = user.full_name || user.username;
+                        const initials = getInitials(name);
+                        
+                        const initialsEl = document.getElementById('user-profile-avatar-initials');
+                        const imgEl = document.getElementById('user-profile-avatar-img');
+                        
+                        if (initialsEl) {
+                            initialsEl.innerText = initials;
+                            if (user.profile_picture) {
+                                initialsEl.classList.add('hidden');
+                            } else {
+                                initialsEl.classList.remove('hidden');
+                            }
+                        }
+                        if (imgEl) {
+                            if (user.profile_picture) {
+                                imgEl.src = user.profile_picture;
+                                imgEl.classList.remove('hidden');
+                            } else {
+                                imgEl.classList.add('hidden');
+                            }
+                        }
                     } else {
                         localStorage.removeItem('access_token');
                         updateNavigationState();

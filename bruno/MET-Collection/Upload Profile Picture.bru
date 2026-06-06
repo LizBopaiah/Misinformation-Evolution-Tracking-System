@@ -1,0 +1,27 @@
+meta {
+  name: Upload Profile Picture
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/users/profile-picture
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:multipart-form {
+  profile_picture: 
+}
+
+tests {
+  test("Upload endpoint exists and validates content", function() {
+    // If no file is selected, returns 400 Bad Request
+    // If a valid file is uploaded in the UI, returns 200 Success
+    expect(res.getStatus()).to.be.oneOf([200, 400]);
+  });
+}

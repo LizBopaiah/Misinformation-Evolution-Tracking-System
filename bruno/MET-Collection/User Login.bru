@@ -12,7 +12,22 @@ post {
 
 body:json {
   {
-    "username": "testuser",
+    "email": "testuser@example.com",
     "password": "strongpassword123"
+  }
+}
+
+tests {
+  test("Login should be successful", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const data = res.getBody().data;
+    if (data && data.access_token) {
+      bru.setEnvVar("token", data.access_token);
+    }
   }
 }

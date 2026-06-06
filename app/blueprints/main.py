@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, send_from_directory, current_app
 from app.blueprints.api import make_success_response
+import os
 
 main_bp = Blueprint('main', __name__)
 
@@ -42,6 +43,12 @@ def about_platform():
 def system_overview():
     """Renders technical developer overview dashboard"""
     return render_template('system_overview.html')
+
+@main_bp.route('/uploads/profile_pictures/<filename>')
+def serve_profile_picture(filename):
+    """Serve uploaded profile pictures from filesystem securely"""
+    return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
+
 
 @main_bp.route('/api/health')
 def health():

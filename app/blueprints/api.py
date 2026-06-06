@@ -7,7 +7,7 @@ def make_success_response(data=None, message="Operation successful", status_code
     return jsonify({
         "success": True,
         "message": message,
-        "data": data or {}
+        "data": data if data is not None else {}
     }), status_code
 
 def make_error_response(message="An error occurred", status_code=400, errors=None):

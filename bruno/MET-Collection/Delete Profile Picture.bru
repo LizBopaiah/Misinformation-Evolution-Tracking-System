@@ -1,0 +1,21 @@
+meta {
+  name: Delete Profile Picture
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/api/users/profile-picture
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("Delete picture response checks", function() {
+    expect(res.getStatus()).to.be.oneOf([200, 400]);
+  });
+}

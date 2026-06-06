@@ -1,11 +1,11 @@
 meta {
-  name: Get Profile
+  name: Get Search History
   type: http
-  seq: 4
+  seq: 9
 }
 
 get {
-  url: {{baseUrl}}/api/users/profile
+  url: {{baseUrl}}/api/users/search-history
   body: none
   auth: bearer
 }
@@ -15,8 +15,9 @@ auth:bearer {
 }
 
 tests {
-  test("Get profile should be successful", function() {
+  test("Get search history should be successful", function() {
     expect(res.getStatus()).to.equal(200);
     expect(res.getBody().success).to.be.true;
+    expect(res.getBody().data).to.be.an('array');
   });
 }

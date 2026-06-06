@@ -16,6 +16,12 @@ auth:bearer {
 
 body:json {
   {
-    "email": "updated_testuser@example.com"
+    "full_name": "Updated Test User"
   }
+}
+
+tests {
+  test("Profile update should be successful", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
 }

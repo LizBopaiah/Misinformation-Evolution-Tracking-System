@@ -1,0 +1,21 @@
+meta {
+  name: Token Validation
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/api/users/profile
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: an_invalid_token_xyz
+}
+
+tests {
+  test("Accessing profile with invalid token should be unauthorized", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

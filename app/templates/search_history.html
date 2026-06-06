@@ -12,25 +12,109 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-xl mx-auto py-8 space-y-6 animate-in fade-in zoom-in-95 duration-300">
+<div class="max-w-2xl mx-auto py-8 space-y-6 animate-in fade-in zoom-in-95 duration-300">
 
     <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl shadow-sm p-6 space-y-6">
         
-        <div class="border-b border-slate-200/60 dark:border-slate-800/60 pb-3">
-            <h1 class="font-display font-semibold text-lg text-slate-900 dark:text-white">Narrative Search History</h1>
-            <p class="text-xs text-slate-500 dark:text-slate-450 mt-0.5">Logs of audited claims, keywords, and topics in this account.</p>
+        <div class="border-b border-slate-200/60 dark:border-slate-800/60 pb-3 flex justify-between items-center">
+            <div>
+                <h1 class="font-display font-semibold text-lg text-slate-900 dark:text-white">Narrative Search History</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-450 mt-0.5">Logs of audited claims, keywords, and topics in this account.</p>
+            </div>
+            <span id="history-count" class="hidden text-xs px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-350 font-bold">0 searches</span>
         </div>
 
         <!-- Blank State Placeholder -->
-        <div class="text-center py-10 space-y-3">
+        <div id="blank-state" class="text-center py-10 space-y-3">
             <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800/80 flex items-center justify-center mx-auto text-slate-400 dark:text-slate-500">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </div>
             <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">No searches yet</p>
-            <p class="text-xs text-slate-400 dark:text-slate-550 max-w-xs mx-auto leading-relaxed">Search history logs will be registered dynamically in subsequent modules.</p>
+            <p class="text-xs text-slate-400 dark:text-slate-550 max-w-xs mx-auto leading-relaxed">Your search history is empty. When you query claims or topics, they will appear here.</p>
+        </div>
+
+        <!-- History list container -->
+        <div id="history-list" class="hidden space-y-4">
+            <!-- Dynamically populated rows -->
         </div>
 
     </div>
 
 </div>
+
+<script>
+    window.addEventListener('load', () => {
+        loadSearchHistory();
+    });
+
+    function loadSearchHistory() {
+        Loader.show();
+        fetch('/api/users/search-history')
+        .then(res => res.json())
+        .then(data => {
+            Loader.hide();
+            if (data.success) {
+                const searches = data.data || [];
+                const blankState = document.getElementById('blank-state');
+                const historyList = document.getElementById('history-list');
+                const historyCount = document.getElementById('history-count');
+                
+                if (searches.length === 0) {
+                    blankState.classList.remove('hidden');
+                    historyList.classList.add('hidden');
+                    historyCount.classList.add('hidden');
+                } else {
+                    blankState.classList.add('hidden');
+                    historyList.classList.remove('hidden');
+                    historyCount.classList.remove('hidden');
+                    historyCount.innerText = `${searches.length} search${searches.length > 1 ? 'es' : ''}`;
+                    
+                    historyList.innerHTML = '';
+                    searches.forEach(search => {
+                        const date = new Date(search.created_at);
+                        const dateString = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        
+                        const row = document.createElement('div');
+                        row.className = "p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 hover:border-slate-200 dark:hover:border-slate-750 transition-all duration-300 space-y-2";
+                        
+                        // Status styling
+                        let statusColor = "bg-slate-100 text-slate-600 dark:bg-slate-850 dark:text-slate-400";
+                        if (search.status === 'completed') statusColor = "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400";
+                        if (search.status === 'failed') statusColor = "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400";
+                        if (search.status === 'pending') statusColor = "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400";
+
+                        row.innerHTML = `
+                            <div class="flex items-center justify-between text-[10px]">
+                                <span class="px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${statusColor}">${search.status || 'unknown'}</span>
+                                <span class="text-slate-450 dark:text-slate-500 font-mono">${dateString}</span>
+                            </div>
+                            <h4 class="text-sm font-bold text-slate-850 dark:text-slate-200">${escapeHtml(search.query)}</h4>
+                            ${search.summary ? `<p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium mt-1">${escapeHtml(search.summary)}</p>` : ''}
+                            <div class="flex items-center gap-2 text-[10px] text-slate-400 dark:text-slate-500 pt-1">
+                                <span>Type: <strong class="text-slate-600 dark:text-slate-450">${escapeHtml(search.search_type || 'general')}</strong></span>
+                            </div>
+                        `;
+                        historyList.appendChild(row);
+                    });
+                }
+            } else {
+                Toast.show("Failed to load search history.", "error");
+            }
+        })
+        .catch(err => {
+            Loader.hide();
+            Toast.show(`History Load Error: ${err.message}`, "error");
+        });
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+</script>
 {% endblock %}

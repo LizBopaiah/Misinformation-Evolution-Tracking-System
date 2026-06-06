@@ -15,12 +15,27 @@
 <div class="space-y-8 animate-in fade-in duration-300 max-w-5xl mx-auto py-4">
 
     <!-- Top Greeting Section -->
-    <div class="p-6 md:p-8 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-gradient-to-tr from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 shadow-sm relative overflow-hidden">
+    <div class="p-6 md:p-8 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-gradient-to-tr from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 shadow-sm relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-2xl"></div>
-        <div class="max-w-2xl relative z-10 space-y-2">
-            <h1 class="text-2xl font-display font-semibold tracking-tight text-slate-900 dark:text-white">
-                Welcome, <span id="user-greeting-name" class="text-indigo-600 dark:text-indigo-400">Researcher</span>
-            </h1>
+        
+        <div class="flex items-center gap-4 relative z-10">
+            <!-- User Greeting Profile Avatar -->
+            <div class="w-14 h-14 rounded-full bg-indigo-600 border border-slate-250 dark:border-slate-800 flex items-center justify-center font-display font-semibold text-lg text-white shadow-sm overflow-hidden flex-shrink-0">
+                <span id="dashboard-avatar-initials">U</span>
+                <img id="dashboard-avatar-img" class="w-full h-full object-cover hidden" src="" alt="Avatar">
+            </div>
+            
+            <div class="space-y-1">
+                <h1 class="text-xl md:text-2xl font-display font-semibold tracking-tight text-slate-900 dark:text-white">
+                    Welcome back, <span id="user-greeting-name" class="text-indigo-600 dark:text-indigo-400 font-bold">Researcher</span>
+                </h1>
+                <p class="text-slate-450 dark:text-slate-500 text-xs font-mono font-medium">
+                    Account Member Since: <span id="user-created-date">-</span>
+                </p>
+            </div>
+        </div>
+
+        <div class="text-left md:text-right relative z-10 md:max-w-xs space-y-1">
             <p class="text-slate-500 dark:text-slate-400 text-xs leading-relaxed">
                 Query claim topic threads below. System gathered data is analyzed for truth probability, mutations, and semantic sentiment tone.
             </p>
@@ -112,38 +127,11 @@
         </div>
     </div>
 
-    <!-- Recent Searches Section -->
+    <!-- Recent Activity Section -->
     <div class="space-y-4">
-        <h2 class="font-display font-semibold text-sm tracking-tight text-slate-900 dark:text-white px-1">Recent Searches</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            
-            <div onclick="selectPlaceholder('COVID vaccine infertility')" class="p-4 rounded-xl border border-slate-200/60 dark:border-slate-800/60 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-850 shadow-xs cursor-pointer transition-premium space-y-1.5">
-                <div class="flex items-center justify-between text-[10px]">
-                    <span class="font-bold text-rose-500">False Claim</span>
-                    <span class="text-slate-400">1h ago</span>
-                </div>
-                <h4 class="text-xs font-bold text-slate-850 dark:text-slate-200">COVID vaccine infertility</h4>
-                <p class="text-[10px] text-slate-450 dark:text-slate-550 truncate">Claim: The vaccines trigger autoimmune response affecting reproductive organs...</p>
-            </div>
-
-            <div onclick="selectPlaceholder('5G causes cancer')" class="p-4 rounded-xl border border-slate-200/60 dark:border-slate-800/60 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-850 shadow-xs cursor-pointer transition-premium space-y-1.5">
-                <div class="flex items-center justify-between text-[10px]">
-                    <span class="font-bold text-rose-500">Misleading</span>
-                    <span class="text-slate-400">3h ago</span>
-                </div>
-                <h4 class="text-xs font-bold text-slate-850 dark:text-slate-200">5G causes cancer</h4>
-                <p class="text-[10px] text-slate-450 dark:text-slate-550 truncate">Claim: High-frequency millimeter waves trigger cellular degradation...</p>
-            </div>
-
-            <div onclick="selectPlaceholder('Climate change hoax')" class="p-4 rounded-xl border border-slate-200/60 dark:border-slate-800/60 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-850 shadow-xs cursor-pointer transition-premium space-y-1.5">
-                <div class="flex items-center justify-between text-[10px]">
-                    <span class="font-bold text-slate-500">Unverified</span>
-                    <span class="text-slate-400">Yesterday</span>
-                </div>
-                <h4 class="text-xs font-bold text-slate-850 dark:text-slate-200">Climate change hoax</h4>
-                <p class="text-[10px] text-slate-450 dark:text-slate-550 truncate">Claim: Global temperature averages are manipulated to influence green policies...</p>
-            </div>
-
+        <h2 class="font-display font-semibold text-sm tracking-tight text-slate-900 dark:text-white px-1">Recent Activity</h2>
+        <div class="border border-slate-200/60 dark:border-slate-800/60 rounded-2xl bg-white dark:bg-slate-900 p-8 text-center text-xs text-slate-450 dark:text-slate-500 font-medium shadow-xs">
+            No activity available yet.
         </div>
     </div>
 
@@ -193,21 +181,44 @@
         }, 900);
     }
 
-    // Set greeting name dynamically
+    // Set greeting name, avatar, and registration date dynamically
     window.addEventListener('load', () => {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-            fetch('/api/users/profile', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('user-greeting-name').innerText = data.data.full_name || data.data.username;
+        fetch('/api/users/profile')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const user = data.data;
+                const name = user.full_name || user.username;
+                document.getElementById('user-greeting-name').innerText = name;
+                
+                if (user.created_at) {
+                    document.getElementById('user-created-date').innerText = user.created_at.split('T')[0];
                 }
-            })
-            .catch(() => {});
-        }
+                
+                // Update avatar
+                const initials = getInitials(name);
+                const initialsEl = document.getElementById('dashboard-avatar-initials');
+                const imgEl = document.getElementById('dashboard-avatar-img');
+                
+                if (initialsEl) {
+                    initialsEl.innerText = initials;
+                    if (user.profile_picture) {
+                        initialsEl.classList.add('hidden');
+                    } else {
+                        initialsEl.classList.remove('hidden');
+                    }
+                }
+                if (imgEl) {
+                    if (user.profile_picture) {
+                        imgEl.src = user.profile_picture;
+                        imgEl.classList.remove('hidden');
+                    } else {
+                        imgEl.classList.add('hidden');
+                    }
+                }
+            }
+        })
+        .catch(() => {});
     });
 </script>
 {% endblock %}

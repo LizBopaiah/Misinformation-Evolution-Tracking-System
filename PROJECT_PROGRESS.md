@@ -165,7 +165,22 @@ MET/
 
 ---
 
-## 🔮 Next Module – Module 2: Datasets Integration & Sentiment Analytics
+## 🚀 Module 2 – Authentication & User Management (Status: COMPLETED ✅)
+
+### Implemented Features
+1. **Profile Management API**: Integrated profile retrieve and update routes. Created the `GET /api/users/search-history` endpoint and fully established User ↔ SearchHistory foreign keys, backrefs, and cascade delete behavior.
+2. **Disabled Email Editing**: Enforced disabled email editing constraints on the backend validation layer and frontend UI views.
+3. **Secure Image Uploads Service**: Implemented secure profile picture upload (`POST /api/users/profile-picture`) with size checks (max 5MB), file extension constraints (JPG, JPEG, PNG, WEBP), MIME type validation, and Pillow-based integrity checks.
+4. **Profile Picture Deletion**: Added picture deletion endpoint (`DELETE /api/users/profile-picture`) that deletes files from disk and updates DB.
+5. **Automatic JWT Session Expiration Handling**: Configured a global fetch interceptor that auto-injects JWT tokens and logs the user out with dynamic visual warnings if a 401 response occurs.
+6. **Initials-Based Avatar Generation**: Added dynamic frontend avatar initials generation as a graceful fallback when no profile picture exists.
+7. **Refined UI & Dashboard**: Updated dashboard greetings ("Welcome back, {User Name}"), showing the member's created date, avatar, and a clean "No activity available yet" state for Recent Activity.
+8. **Bruno Suite Verification**: Expanded the Bruno API test collection with post-response scripts to dynamically extract and store access tokens for registration, logins, profile updates, picture uploads, deletions, and route checks.
+
+---
+
+## 🔮 Next Module – Module 3: Datasets Integration & Sentiment Analytics
 * Setup pipelines to load, clean, and map the Fake News, LIAR, and Emotion datasets.
 * Integrate NLP layers utilizing nltk / spacy.
 * Implement sentiment scoring and emotional profile indexing.
+

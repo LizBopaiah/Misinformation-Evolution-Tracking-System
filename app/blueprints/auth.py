@@ -1,7 +1,9 @@
 from flask import Blueprint, request
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from datetime import datetime, timezone
 from app.extensions import db
 from app.models.user import User
+from app.services.utils import validate_email
 from app.blueprints.api import make_success_response, make_error_response, make_validation_response
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
@@ -23,8 +25,16 @@ def register():
         errors['full_name'] = 'Full Name is required.'
     if not email:
         errors['email'] = 'Email is required.'
+    elif not validate_email(email):
+        errors['email'] = 'Invalid email address format.'
+        
     if not password:
         errors['password'] = 'Password is required.'
+    elif len(password) < 8:
+        errors['password'] = 'Password must be at least 8 characters long.'
+        
+    if not confirm_password:
+        errors['confirm_password'] = 'Password confirmation is required.'
     elif password != confirm_password:
         errors['confirm_password'] = 'Passwords do not match.'
         
@@ -38,6 +48,7 @@ def register():
     # Create new user
     user = User(username=username, email=email, full_name=full_name)
     user.set_password(password)
+    user.last_login = datetime.now(timezone.utc)
     
     try:
         db.session.add(user)
@@ -70,7 +81,7 @@ def login():
     password = data.get('password')
     
     if not username_or_email or not password:
-        return make_error_response("Missing credentials. Username/email and password required.", 400)
+        return make_error_response("Missing credentials. Email and password required.", 400)
 
     # Try lookup by username or email
     user = User.query.filter(
@@ -78,7 +89,17 @@ def login():
     ).first()
 
     if not user or not user.check_password(password):
-        return make_error_response("Invalid username/email or password.", 401)
+        return make_error_response("Invalid email or password.", 401)
+
+    # Update last login timestamp
+    user.last_login = datetime.now(timezone.utc)
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        # Log this error or proceed; we shouldn't block login if timestamp update fails
+        # but let's make sure it is rolled back
+        pass
 
     # Generate JWT
     access_token = create_access_token(
@@ -92,3 +113,14 @@ def login():
         },
         message="Login successful"
     )
+
+
+@auth_bp.route('/logout', methods=['POST'])
+def logout():
+    """Endpoint to trigger user logout on the backend"""
+    # In a stateless JWT architecture, the client destroys the token.
+    # We return a standard success response confirming logout.
+    return make_success_response(
+        message="Logout successful"
+    )
+
