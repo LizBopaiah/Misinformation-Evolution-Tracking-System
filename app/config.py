@@ -6,6 +6,9 @@ load_dotenv()
 
 class Config:
     """Base Configuration Class"""
+    # Base URL configuration
+    BASE_URL = os.getenv('BASE_URL', 'http://127.0.0.1:8000')
+
     # Flask configuration
     SECRET_KEY = os.getenv('SECRET_KEY', 'default-development-secret-key-change-in-production')
     DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 't')

@@ -35,6 +35,14 @@ def create_app(config_class=Config):
         except Exception as e:
             app.logger.error(f"Failed to auto-create database: {str(e)}")
 
+        # Trigger dataset validation on startup (will load from cache if available)
+        from app.services.dataset_service import DatasetService
+        try:
+            DatasetService().validate_datasets()
+            app.logger.info("Dataset validation completed successfully (loaded or cached)")
+        except Exception as e:
+            app.logger.error(f"Failed to validate datasets on startup: {str(e)}")
+
     return app
 
 def configure_logging(app):
@@ -71,11 +79,17 @@ def register_blueprints(app):
     from app.blueprints.user import user_bp
     from app.blueprints.api import api_bp
     from app.blueprints.main import main_bp
+    from app.blueprints.dataset import dataset_bp
+    from app.blueprints.model import model_bp
+    from app.blueprints.nlp import nlp_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(main_bp)
+    app.register_blueprint(dataset_bp)
+    app.register_blueprint(model_bp)
+    app.register_blueprint(nlp_bp)
 
 def register_error_handlers(app):
     """Registers global handlers for HTTP error codes to return structured JSON payloads"""

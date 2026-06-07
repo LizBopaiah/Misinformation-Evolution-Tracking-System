@@ -1,0 +1,275 @@
+{
+    "fake_news": {
+        "logistic_regression": {
+            "accuracy": 0.9894,
+            "precision": 0.9894,
+            "recall": 0.9894,
+            "f1_score": 0.9894,
+            "classification_report_dict": {
+                "0": {
+                    "precision": 0.986527293844367,
+                    "recall": 0.9915946766285314,
+                    "f1-score": 0.9890544946436889,
+                    "support": 4283.0
+                },
+                "1": {
+                    "precision": 0.9920564872021183,
+                    "recall": 0.9872639437856829,
+                    "f1-score": 0.9896544133832269,
+                    "support": 4554.0
+                },
+                "accuracy": 0.9893629059635622,
+                "macro avg": {
+                    "precision": 0.9892918905232426,
+                    "recall": 0.9894293102071072,
+                    "f1-score": 0.9893544540134579,
+                    "support": 8837.0
+                },
+                "weighted avg": {
+                    "precision": 0.9893766710709371,
+                    "recall": 0.9893629059635622,
+                    "f1-score": 0.989363652722206,
+                    "support": 8837.0
+                }
+            },
+            "classification_report_text": "              precision    recall  f1-score   support\n\n           0       0.99      0.99      0.99      4283\n           1       0.99      0.99      0.99      4554\n\n    accuracy                           0.99      8837\n   macro avg       0.99      0.99      0.99      8837\nweighted avg       0.99      0.99      0.99      8837\n"
+        },
+        "naive_bayes": {
+            "accuracy": 0.9466,
+            "precision": 0.9466,
+            "recall": 0.9466,
+            "f1_score": 0.9466,
+            "classification_report_dict": {
+                "0": {
+                    "precision": 0.9407818644459865,
+                    "recall": 0.9495680597711884,
+                    "f1-score": 0.9451545433418546,
+                    "support": 4283.0
+                },
+                "1": {
+                    "precision": 0.9521488701816571,
+                    "recall": 0.9437856829161178,
+                    "f1-score": 0.9479488310542568,
+                    "support": 4554.0
+                },
+                "accuracy": 0.9465882086681,
+                "macro avg": {
+                    "precision": 0.9464653673138218,
+                    "recall": 0.9466768713436531,
+                    "f1-score": 0.9465516871980557,
+                    "support": 8837.0
+                },
+                "weighted avg": {
+                    "precision": 0.9466396605442374,
+                    "recall": 0.9465882086681,
+                    "f1-score": 0.9465945327321771,
+                    "support": 8837.0
+                }
+            },
+            "classification_report_text": "              precision    recall  f1-score   support\n\n           0       0.94      0.95      0.95      4283\n           1       0.95      0.94      0.95      4554\n\n    accuracy                           0.95      8837\n   macro avg       0.95      0.95      0.95      8837\nweighted avg       0.95      0.95      0.95      8837\n"
+        },
+        "best_model": "logistic_regression"
+    },
+    "liar": {
+        "logistic_regression": {
+            "accuracy": 0.5526,
+            "precision": 0.4896,
+            "recall": 0.5526,
+            "f1_score": 0.4864,
+            "classification_report_dict": {
+                "False": {
+                    "precision": 0.4398976982097187,
+                    "recall": 0.2419127988748242,
+                    "f1-score": 0.3121597096188748,
+                    "support": 711.0
+                },
+                "Partially True": {
+                    "precision": 0.5826996197718631,
+                    "recall": 0.8531663187195546,
+                    "f1-score": 0.692459757130754,
+                    "support": 1437.0
+                },
+                "True": {
+                    "precision": 0.25,
+                    "recall": 0.038929440389294405,
+                    "f1-score": 0.06736842105263158,
+                    "support": 411.0
+                },
+                "accuracy": 0.5525595935912466,
+                "macro avg": {
+                    "precision": 0.42419910599386057,
+                    "recall": 0.3780028526612244,
+                    "f1-score": 0.3573292959340868,
+                    "support": 2559.0
+                },
+                "weighted avg": {
+                    "precision": 0.48958836148467266,
+                    "recall": 0.5525595935912466,
+                    "f1-score": 0.48640040859263195,
+                    "support": 2559.0
+                }
+            },
+            "classification_report_text": "                precision    recall  f1-score   support\n\n         False       0.44      0.24      0.31       711\nPartially True       0.58      0.85      0.69      1437\n          True       0.25      0.04      0.07       411\n\n      accuracy                           0.55      2559\n     macro avg       0.42      0.38      0.36      2559\n  weighted avg       0.49      0.55      0.49      2559\n"
+        },
+        "naive_bayes": {
+            "accuracy": 0.5721,
+            "precision": 0.477,
+            "recall": 0.5721,
+            "f1_score": 0.4587,
+            "classification_report_dict": {
+                "False": {
+                    "precision": 0.5576923076923077,
+                    "recall": 0.12236286919831224,
+                    "f1-score": 0.20069204152249134,
+                    "support": 711.0
+                },
+                "Partially True": {
+                    "precision": 0.5735110370678884,
+                    "recall": 0.9582463465553236,
+                    "f1-score": 0.7175612298071913,
+                    "support": 1437.0
+                },
+                "True": {
+                    "precision": 0.0,
+                    "recall": 0.0,
+                    "f1-score": 0.0,
+                    "support": 411.0
+                },
+                "accuracy": 0.5720984759671747,
+                "macro avg": {
+                    "precision": 0.37706778158673204,
+                    "recall": 0.3602030719178786,
+                    "f1-score": 0.30608442377656087,
+                    "support": 2559.0
+                },
+                "weighted avg": {
+                    "precision": 0.4770045295176969,
+                    "recall": 0.5720984759671747,
+                    "f1-score": 0.45870556027957216,
+                    "support": 2559.0
+                }
+            },
+            "classification_report_text": "                precision    recall  f1-score   support\n\n         False       0.56      0.12      0.20       711\nPartially True       0.57      0.96      0.72      1437\n          True       0.00      0.00      0.00       411\n\n      accuracy                           0.57      2559\n     macro avg       0.38      0.36      0.31      2559\n  weighted avg       0.48      0.57      0.46      2559\n"
+        },
+        "best_model": "logistic_regression"
+    },
+    "emotion": {
+        "logistic_regression": {
+            "accuracy": 0.8735,
+            "precision": 0.8753,
+            "recall": 0.8735,
+            "f1_score": 0.8682,
+            "classification_report_dict": {
+                "Anger": {
+                    "precision": 0.9182389937106918,
+                    "recall": 0.8081180811808119,
+                    "f1-score": 0.8596663395485771,
+                    "support": 542.0
+                },
+                "Fear": {
+                    "precision": 0.8803827751196173,
+                    "recall": 0.7747368421052632,
+                    "f1-score": 0.8241881298992161,
+                    "support": 475.0
+                },
+                "Joy": {
+                    "precision": 0.8434894162924952,
+                    "recall": 0.9726331360946746,
+                    "f1-score": 0.9034695980762625,
+                    "support": 1352.0
+                },
+                "Love": {
+                    "precision": 0.8782608695652174,
+                    "recall": 0.6158536585365854,
+                    "f1-score": 0.7240143369175627,
+                    "support": 328.0
+                },
+                "Sadness": {
+                    "precision": 0.892770105605199,
+                    "recall": 0.9482312338222606,
+                    "f1-score": 0.9196652719665271,
+                    "support": 1159.0
+                },
+                "Surprise": {
+                    "precision": 0.8470588235294118,
+                    "recall": 0.5,
+                    "f1-score": 0.62882096069869,
+                    "support": 144.0
+                },
+                "accuracy": 0.8735,
+                "macro avg": {
+                    "precision": 0.8767001639704386,
+                    "recall": 0.7699288252899326,
+                    "f1-score": 0.8099707728511393,
+                    "support": 4000.0
+                },
+                "weighted avg": {
+                    "precision": 0.8752579079506297,
+                    "recall": 0.8735,
+                    "f1-score": 0.868209596348835,
+                    "support": 4000.0
+                }
+            },
+            "classification_report_text": "              precision    recall  f1-score   support\n\n       Anger       0.92      0.81      0.86       542\n        Fear       0.88      0.77      0.82       475\n         Joy       0.84      0.97      0.90      1352\n        Love       0.88      0.62      0.72       328\n     Sadness       0.89      0.95      0.92      1159\n    Surprise       0.85      0.50      0.63       144\n\n    accuracy                           0.87      4000\n   macro avg       0.88      0.77      0.81      4000\nweighted avg       0.88      0.87      0.87      4000\n"
+        },
+        "naive_bayes": {
+            "accuracy": 0.7955,
+            "precision": 0.8294,
+            "recall": 0.7955,
+            "f1_score": 0.7716,
+            "classification_report_dict": {
+                "Anger": {
+                    "precision": 0.9512195121951219,
+                    "recall": 0.6476014760147601,
+                    "f1-score": 0.7705817782656421,
+                    "support": 542.0
+                },
+                "Fear": {
+                    "precision": 0.8958333333333334,
+                    "recall": 0.6336842105263157,
+                    "f1-score": 0.7422934648581998,
+                    "support": 475.0
+                },
+                "Joy": {
+                    "precision": 0.7384786229872293,
+                    "recall": 0.9837278106508875,
+                    "f1-score": 0.8436409768474469,
+                    "support": 1352.0
+                },
+                "Love": {
+                    "precision": 0.98,
+                    "recall": 0.29878048780487804,
+                    "f1-score": 0.45794392523364486,
+                    "support": 328.0
+                },
+                "Sadness": {
+                    "precision": 0.7874818049490538,
+                    "recall": 0.9335634167385677,
+                    "f1-score": 0.8543229372285827,
+                    "support": 1159.0
+                },
+                "Surprise": {
+                    "precision": 1.0,
+                    "recall": 0.1388888888888889,
+                    "f1-score": 0.24390243902439024,
+                    "support": 144.0
+                },
+                "accuracy": 0.7955,
+                "macro avg": {
+                    "precision": 0.8921688789107898,
+                    "recall": 0.606041048437383,
+                    "f1-score": 0.6521142535763178,
+                    "support": 4000.0
+                },
+                "weighted avg": {
+                    "precision": 0.8294090797894442,
+                    "recall": 0.7955,
+                    "f1-score": 0.7715837908173615,
+                    "support": 4000.0
+                }
+            },
+            "classification_report_text": "              precision    recall  f1-score   support\n\n       Anger       0.95      0.65      0.77       542\n        Fear       0.90      0.63      0.74       475\n         Joy       0.74      0.98      0.84      1352\n        Love       0.98      0.30      0.46       328\n     Sadness       0.79      0.93      0.85      1159\n    Surprise       1.00      0.14      0.24       144\n\n    accuracy                           0.80      4000\n   macro avg       0.89      0.61      0.65      4000\nweighted avg       0.83      0.80      0.77      4000\n"
+        },
+        "best_model": "logistic_regression"
+    }
+}

@@ -86,13 +86,7 @@ MET/
 │   │   ├── evolution.py         # EvolutionResult (mutation trees, narrative lineage)
 │   │   ├── cluster.py           # NarrativeCluster (thematic clustering groups)
 │   │   └── log.py               # SystemLog (internal security/admin log records)
-│   ├── blueprints/              # Routing layers
-│   │   ├── __init__.py          # Blueprint package module
-│   │   ├── auth.py              # JWT authentication: signup & login
-│   │   ├── user.py              # User profile retrieval & update, role checks
-│   │   ├── api.py               # Standardized API response utilities
-│   │   └── main.py              # Page rendering, system health validation
-│   ├── services/                # Placeholders for future business logic blocks
+│   ├── services/                # Business logic blocks & services
 │   │   ├── __init__.py          # Bundle services
 │   │   ├── search_service.py    # Google Custom Search API placeholder
 │   │   ├── scraping_service.py  # BS4 Web scraping parsing placeholder
@@ -105,7 +99,18 @@ MET/
 │   │   ├── knowledge_graph_service.py # Semantic triples construction placeholder
 │   │   ├── report_service.py    # PDF export pipeline placeholder
 │   │   ├── dataset_service.py   # Dataset manager layer (Fake News, LIAR, Emotion)
+│   │   ├── model_service.py     # Model manager layer (saving, loading, inference methods)
+│   │   ├── nlp_service.py       # spaCy + NLTK text preprocessing pipeline
 │   │   └── utils.py             # Shared utility functions
+│   ├── blueprints/              # Routing layers
+│   │   ├── __init__.py          # Blueprint package module
+│   │   ├── auth.py              # JWT authentication: signup & login
+│   │   ├── user.py              # User profile retrieval & update
+│   │   ├── api.py               # Standardized API response utilities
+│   │   ├── dataset.py           # Dataset status, stats, and preview endpoints
+│   │   ├── model.py             # Classifier status and performance endpoints
+│   │   ├── nlp.py               # NLP token preprocessing sandbox API
+│   │   └── main.py              # Page rendering, system health validation
 │   ├── static/
 │   │   ├── css/
 │   │   │   └── style.css        # Apple + Notion variables, typography and scrollbar styles
@@ -113,7 +118,8 @@ MET/
 │   │       └── app.js           # Client actions: theme toggling, toasts, modals, loader
 │   └── templates/
 │       ├── base.html            # Premium dashboard master frame structure
-│       └── index.html           # Landing page content workspace
+│       ├── index.html           # Landing page content workspace
+│       └── system_overview.html # Analytics dashboard displaying charts & tables
 ├── bruno/                       # Bruno Collection suite
 │   └── MET-Collection/
 │       ├── bruno.json           # Bruno configuration
@@ -123,7 +129,19 @@ MET/
 │       ├── User Registration.bru
 │       ├── User Login.bru
 │       ├── Get Profile.bru
-│       └── Update Profile.bru
+│       ├── Update Profile.bru
+│       ├── Dataset Status.bru
+│       ├── Dataset Statistics.bru
+│       ├── Dataset Preview.bru
+│       ├── Model Status.bru
+│       ├── Model Performance.bru
+│       └── NLP Preprocess.bru
+├── scripts/
+│   └── train_models.py          # Model training pipeline (Logistic Regression vs Naive Bayes)
+├── reports/
+│   ├── fake_news_confusion_matrix.png # Confusion matrix plot for Fake News classifier
+│   ├── liar_confusion_matrix.png      # Confusion matrix plot for LIAR classifier
+│   └── emotion_confusion_matrix.png   # Confusion matrix plot for Emotion classifier
 ├── .env.example                 # Env parameters template
 ├── .env                         # Preconfigured development env variables
 ├── .gitignore                   # Exclusions: Virtualenv, build, logs, databases, IDE files
@@ -150,6 +168,12 @@ MET/
   * `POST /api/auth/login` 🟢 (Online)
   * `GET /api/users/profile` 🔑 (Requires Bearer token, Online)
   * `PUT /api/users/profile` 🔑 (Requires Bearer token, Online)
+  * `GET /api/datasets/status` 🟢 (Online)
+  * `GET /api/datasets/statistics` 🟢 (Online)
+  * `GET /api/datasets/preview` 🟢 (Online)
+  * `GET /api/models/status` 🟢 (Online)
+  * `GET /api/models/performance` 🟢 (Online)
+  * `POST /api/nlp/preprocess` 🟢 (Online)
 
 ### 3. Dataset Status
 * **Directories Connected**:
@@ -179,8 +203,19 @@ MET/
 
 ---
 
-## 🔮 Next Module – Module 3: Datasets Integration & Sentiment Analytics
-* Setup pipelines to load, clean, and map the Fake News, LIAR, and Emotion datasets.
-* Integrate NLP layers utilizing nltk / spacy.
-* Implement sentiment scoring and emotional profile indexing.
+## 🚀 Module 3 – Dataset Integration & NLP Foundation (Status: COMPLETED ✅)
 
+### Implemented Features
+1. **spaCy + NLTK NLP Preprocessing**: Created a highly optimized lemmatizer and cleaner in `nlp_service.py` that strips HTML/URLs, cleans punctuation, filters stopwords, lemmatizes tokens, and runs efficiently in batches using `.pipe()`.
+2. **Dataset Loaders & Cache System**: Implemented `DatasetService` supporting Fake News (merged csvs), LIAR (three TSVs mapped to 3-class ratings), and Emotion (three semicolon txt files maintaining the capitalized "Love" class). Computes distribution summaries and caches them in `instance/dataset_stats.json` for instant startup. Added preview endpoint returning 5-record samples.
+3. **Reproducible Baseline Training Pipeline**: Designed `scripts/train_models.py` which trains Logistic Regression and Multinomial Naive Bayes models on all three tasks using stratified splits (`test_size=0.2`, `random_state=42`). Accuracies achieved: Fake News (98.9%), LIAR (55.3%), Emotion (79.6%).
+4. **Serialization and Artifact persistence**: Saves best models, TF-IDF vectorizers, and CountVectorizers separately using `joblib`. Stores confusion matrix heatmaps (PNG format) in `reports/` and performance summaries in `models/performance_metrics.json`.
+5. **Interactive NLP Sandbox & Analytics Dashboard**: Built `/system-overview` dev screen presenting dataset connection stats, registered model statuses, Chart.js pie and bar distribution graphics, baseline classifier comparison cards, and a text cleaning simulator.
+6. **API Verification Collection**: Added request scripts in the Bruno suite covering dataset status, label distributions, previews, model active files verification, performance summaries, and clean-text POSTs.
+
+---
+
+## 🔮 Next Module – Module 4: Web Scraping & Fact Checking Verification
+* Build out the search engine framework integrating Google Custom Search API.
+* Implement BeautifulSoup content scraper to fetch article texts from query hits.
+* Integrate Gemini LLM to construct claims summaries and audit fact veracity ratings.

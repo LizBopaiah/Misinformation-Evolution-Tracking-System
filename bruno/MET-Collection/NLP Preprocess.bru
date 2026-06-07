@@ -1,0 +1,17 @@
+meta {
+  name: NLP Preprocess
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{baseUrl}}/api/nlp/preprocess
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "text": "<html><body>The quick brown fox jumps over the lazy dog! 123 https://google.com</body></html>"
+  }
+}
