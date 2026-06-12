@@ -92,8 +92,11 @@
                             <button id="export-json-btn" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium">
                                 📥 Export JSON
                             </button>
+                            <button id="export-html-btn" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">
+                                🌐 Export HTML
+                            </button>
                             <button id="export-pdf-btn" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center gap-1 transition-premium">
-                                🖨️ Printable HTML (PDF)
+                                🖨️ Export PDF
                             </button>
                         </div>
                     </div>
@@ -321,10 +324,13 @@
 
         // Set exports actions hooks
         document.getElementById('export-json-btn').onclick = () => {
-            window.open(`/api/research/report/${data.id}/export?format=json`, '_blank');
+            triggerCompareExport(data.id, 'json');
+        };
+        document.getElementById('export-html-btn').onclick = () => {
+            triggerCompareExport(data.id, 'html');
         };
         document.getElementById('export-pdf-btn').onclick = () => {
-            window.open(`/api/research/report/${data.id}/export?format=pdf`, '_blank');
+            triggerCompareExport(data.id, 'pdf');
         };
 
         // Populate similarity heat table
@@ -520,6 +526,67 @@
         .catch(err => {
             Loader.hide();
             Toast.show(err.message, "error");
+        });
+    }
+
+    function triggerCompareExport(reportId, format) {
+        const token = localStorage.getItem('access_token');
+        Loader.show();
+        fetch('/api/export/comparison', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                report_id: reportId,
+                format: format
+            })
+        })
+        .then(res => {
+            Loader.hide();
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.message || "Failed to trigger export."); });
+            }
+            return res.json();
+        })
+        .then(resData => {
+            if (resData.success) {
+                Toast.show("Export file compiled successfully. Downloading...", "success");
+                downloadCompareFile(resData.data.id, resData.data.file_name);
+            } else {
+                Toast.show(resData.message, "error");
+            }
+        })
+        .catch(err => {
+            Loader.hide();
+            Toast.show(err.message || "Failed to generate report export.", "error");
+        });
+    }
+
+    function downloadCompareFile(exportId, filename) {
+        const token = localStorage.getItem('access_token');
+        fetch(`/api/export/${exportId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.message || "Failed to download report file."); });
+            }
+            return res.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(err => {
+            Toast.show(err.message || "Failed to stream download.", "error");
         });
     }
 

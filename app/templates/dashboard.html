@@ -67,9 +67,19 @@
 
     <!-- Long-Term Workflow Result Placeholder Panel -->
     <div id="results-placeholder-panel" class="border border-slate-200/60 dark:border-slate-800/60 rounded-3xl bg-white dark:bg-slate-900 shadow-sm overflow-hidden p-6 md:p-8 space-y-6">
-        <div class="border-b border-slate-200/60 dark:border-slate-800/60 pb-4 flex items-center justify-between">
-            <h3 class="font-display font-semibold text-base text-slate-900 dark:text-white">Analysis Summary</h3>
-            <span id="results-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider">Processed</span>
+        <div class="border-b border-slate-200/60 dark:border-slate-800/60 pb-4 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <h3 class="font-display font-semibold text-base text-slate-900 dark:text-white">Analysis Summary</h3>
+                <span id="results-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-wider">Processed</span>
+            </div>
+            <div id="analysis-export-actions" class="hidden flex items-center gap-2">
+                <button onclick="triggerExport('fact_audit', 'pdf')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">
+                    📋 Export Fact Audit (PDF)
+                </button>
+                <button onclick="triggerExport('dossier', 'pdf')" class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center gap-1 transition-premium">
+                    📁 Export Dossier (PDF)
+                </button>
+            </div>
         </div>
 
         <!-- Initial Blank State -->
@@ -144,9 +154,14 @@
 
             <!-- Sentiment Results Panel -->
             <div id="sentiment-results-panel" class="hidden border-t border-slate-200/60 dark:border-slate-800/60 pt-6 space-y-6 animate-in fade-in duration-300">
-                <div class="flex items-center justify-between">
-                    <h4 class="text-sm font-semibold text-indigo-500 uppercase tracking-wider text-[11px]">Sentiment Intelligence & Manipulation Analysis</h4>
-                    <span id="sentiment-cached-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">Cached</span>
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-2">
+                        <h4 class="text-sm font-semibold text-indigo-500 uppercase tracking-wider text-[11px]">Sentiment Intelligence & Manipulation Analysis</h4>
+                        <span id="sentiment-cached-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">Cached</span>
+                    </div>
+                    <button onclick="triggerExport('sentiment', 'pdf')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">
+                        📊 Export Sentiment (PDF)
+                    </button>
                 </div>
                 
                 <!-- Cards Grid -->
@@ -204,9 +219,14 @@
 
             <!-- Evolution Results Panel -->
             <div id="evolution-results-panel" class="hidden border-t border-slate-200/60 dark:border-slate-800/60 pt-6 space-y-6 animate-in fade-in duration-300">
-                <div class="flex items-center justify-between">
-                    <h4 class="text-sm font-semibold text-indigo-500 uppercase tracking-wider text-[11px]">Narrative Evolution & Timeline Analysis</h4>
-                    <span id="evolution-cached-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">Cached</span>
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-2">
+                        <h4 class="text-sm font-semibold text-indigo-500 uppercase tracking-wider text-[11px]">Narrative Evolution & Timeline Analysis</h4>
+                        <span id="evolution-cached-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">Cached</span>
+                    </div>
+                    <button onclick="triggerExport('evolution', 'pdf')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">
+                        📈 Export Evolution (PDF)
+                    </button>
                 </div>
                 
                 <!-- Cards Grid -->
@@ -422,6 +442,7 @@
         document.getElementById('results-blank-state').classList.add('hidden');
         document.getElementById('results-data-state').classList.remove('hidden');
         document.getElementById('results-badge').classList.remove('hidden');
+        document.getElementById('analysis-export-actions').classList.remove('hidden');
 
         // Hide evolution panel by default on new search results
         document.getElementById('evolution-results-panel').classList.add('hidden');
@@ -998,6 +1019,77 @@
         .catch(err => {
             Loader.hide();
             Toast.show(err.message, "error");
+        });
+    }
+
+    function triggerExport(type, format) {
+        if (!currentSearchId) {
+            Toast.show("No active search query to export.", "warning");
+            return;
+        }
+        const token = localStorage.getItem('access_token');
+        Loader.show();
+        
+        let url = '/api/export/fact-audit';
+        if (type === 'sentiment') url = '/api/export/sentiment';
+        if (type === 'evolution') url = '/api/export/evolution';
+        if (type === 'dossier') url = '/api/export/dossier';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                search_id: currentSearchId,
+                format: format
+            })
+        })
+        .then(res => {
+            Loader.hide();
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.message || "Export request failed."); });
+            }
+            return res.json();
+        })
+        .then(resData => {
+            if (resData.success) {
+                Toast.show("Export file compiled successfully. Downloading...", "success");
+                downloadFile(resData.data.id, resData.data.file_name);
+            } else {
+                Toast.show(resData.message, "error");
+            }
+        })
+        .catch(err => {
+            Loader.hide();
+            Toast.show(err.message || "Failed to trigger export generation.", "error");
+        });
+    }
+
+    function downloadFile(exportId, filename) {
+        const token = localStorage.getItem('access_token');
+        fetch(`/api/export/${exportId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.message || "Failed to stream download."); });
+            }
+            return res.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(err => {
+            Toast.show(err.message || "Failed to download file.", "error");
         });
     }
 

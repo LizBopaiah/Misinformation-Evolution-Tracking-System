@@ -289,5 +289,22 @@ MET/
 7. **Interactive Analytics Dashboard**: Designed a new dashboard view `/research` loaded with Radar Charts and Bar Charts from Chart.js, comparative text results, overlap metrics, and export action buttons.
 8. **Automated Verification Suite**: Built `scripts/verify_research.py` confirming authentication guards, ownership bounds, calculations, cache hit behaviors, and cascade deletes. All tests passing cleanly.
 
+---
+
+## 🚀 Module 7 – Research Report Export & Evidence Dossier System (Status: COMPLETED ✅)
+
+### Implemented Features
+1. **New Export Database Model**: Created `ExportRecord` in `app/models/export.py` with fields for file naming, paths, sizes, format metadata, and custom serialized `snapshot_json` + `file_hash` columns.
+2. **ReportLab PDF Dossier Builder**: Engineered `ExportService` incorporating a dynamic custom canvas `NumberedCanvas` that generates page headers and footers ("Page X of Y"), cover layout sheets, and detailed reference citation grids.
+3. **Format Compiler Multi-Support**: Added generation functions for JSON structures, beautifully styled standalone single-page HTML files, and standard print-ready PDF layouts.
+4. **Auto-Recovery Framework**: Rebuilds missing files on disk automatically using the serialized `snapshot_json` recorded in the database, verifying file integrity on request.
+5. **Secure SHA256 Integrity Checks**: Calculates and stores SHA256 hashes for every generated export file, verifying the checksum dynamically before streaming downloads to detect file corruptions.
+6. **Robust Abuse Rate Limiting**: Restricts requests to 1 request per 5 seconds and 50 requests per day per user, returning `429 Too Many Requests` when limits are exceeded.
+7. **Dossier Size & Formatting Caps**: Enforces maximum caps (100 articles limit on dossiers, 500 pages limit on PDF lengths, first 5,000 characters per article content snippets, and 2 MB limit on total exported text sizes) to prevent server memory issues.
+8. **Cascade Protection (SET NULL)**: Uses nullable foreign key references to keep completed exports available as historical evidence even after parent searches or reports are deleted.
+9. **Dossier Management Interface**: Added an elegant `/exports` center template where users can filter files by search query/type, monitor disk usage stats, check daily rate limit counters, and delete or download exports.
+10. **Interactive Export Action Triggers**: Integrated export controls directly into the Fact Audit, Sentiment Analysis, Narrative Evolution, and Comparative Analytics panels.
+11. **Automated Integration Suite**: Created `scripts/verify_exports.py` testing auth guards, rate limiting, dossier size limits, cascade set null, recovery from snapshots, and corrupted file download blocks. All tests passing cleanly.
+
 
 

@@ -86,6 +86,7 @@ def register_blueprints(app):
     from app.blueprints.sentiment import sentiment_bp
     from app.blueprints.evolution import evolution_bp
     from app.blueprints.research import research_bp
+    from app.blueprints.export import export_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(user_bp)
@@ -98,6 +99,7 @@ def register_blueprints(app):
     app.register_blueprint(sentiment_bp)
     app.register_blueprint(evolution_bp)
     app.register_blueprint(research_bp)
+    app.register_blueprint(export_bp)
 
 
 def register_error_handlers(app):

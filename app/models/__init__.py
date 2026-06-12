@@ -7,6 +7,7 @@ from app.models.evolution import EvolutionResult
 from app.models.cluster import NarrativeCluster
 from app.models.log import SystemLog
 from app.models.report import ResearchReport, ComparisonResult
+from app.models.export import ExportRecord
 
 __all__ = [
     'User',
@@ -18,5 +19,6 @@ __all__ = [
     'NarrativeCluster',
     'SystemLog',
     'ResearchReport',
-    'ComparisonResult'
+    'ComparisonResult',
+    'ExportRecord'
 ]

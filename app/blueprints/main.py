@@ -34,6 +34,11 @@ def profile_page():
     """Renders authenticated user profile dashboard"""
     return render_template('profile.html')
 
+@main_bp.route('/exports')
+def exports_page():
+    """Renders authenticated user exports dossier page"""
+    return render_template('exports.html')
+
 @main_bp.route('/search-history')
 def search_history_page():
     """Renders authenticated user query logs"""
