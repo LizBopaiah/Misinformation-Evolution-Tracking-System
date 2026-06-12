@@ -3,6 +3,7 @@
 {% block title %}Dashboard | MET Research Platform{% endblock %}
 
 {% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // Route Protection: Redirect unauthenticated users immediately to login page
     if (!localStorage.getItem('access_token')) {
@@ -80,13 +81,13 @@
             <p class="text-xs text-slate-400 dark:text-slate-500 max-w-xs mx-auto leading-relaxed">Search for a topic, claim, headline, or keyword to begin.</p>
         </div>
 
-        <!-- Dynamic analysis mock result structure -->
+        <!-- Dynamic analysis result structure -->
         <div id="results-data-state" class="hidden space-y-6 animate-in fade-in duration-300">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
                 <div class="md:col-span-2 space-y-3">
                     <h4 class="text-sm font-semibold text-indigo-500 uppercase tracking-wider text-[11px]">Narrative Summary</h4>
-                    <p id="mock-summary-text" class="text-sm text-slate-650 dark:text-slate-350 leading-relaxed font-medium">
+                    <p id="summary-text" class="text-sm text-slate-650 dark:text-slate-350 leading-relaxed font-medium">
                         Placeholder summary text representing collected news articles regarding the queried topic. This summaries layer will be generated dynamically using the Gemini API.
                     </p>
                 </div>
@@ -95,49 +96,213 @@
                     <h4 class="text-[11px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Fact Audit Profile</h4>
                     
                     <div class="space-y-2 text-xs">
-                        <div class="flex justify-between">
+                        <div class="flex justify-between items-center py-1 border-b border-slate-100/50 dark:border-slate-850/50">
                             <span class="text-slate-450">Veracity Rating:</span>
-                            <span id="mock-rating" class="font-bold text-rose-500">Misleading / False</span>
+                            <span id="fact-check-verdict" class="font-extrabold text-rose-500">-</span>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-slate-450">Source Reliability:</span>
-                            <span class="font-semibold text-slate-700 dark:text-slate-350">Moderate (65%)</span>
-                        </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between items-center py-1 border-b border-slate-100/50 dark:border-slate-850/50">
                             <span class="text-slate-450">Articles Collected:</span>
-                            <span class="font-semibold text-slate-700 dark:text-slate-350">42 references</span>
+                            <span id="stat-articles-collected" class="font-semibold text-slate-700 dark:text-slate-300">-</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 border-b border-slate-100/50 dark:border-slate-850/50">
+                            <span class="text-slate-450">Sources Used:</span>
+                            <span id="stat-sources-used" class="font-semibold text-slate-700 dark:text-slate-300">-</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 border-b border-slate-100/50 dark:border-slate-850/50">
+                            <span class="text-slate-450">Processing Time:</span>
+                            <span id="stat-processing-time" class="font-semibold text-slate-700 dark:text-slate-300">-</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1">
+                            <span class="text-slate-450">Search Date:</span>
+                            <span id="stat-search-date" class="font-semibold text-slate-700 dark:text-slate-300">-</span>
                         </div>
                     </div>
                 </div>
 
             </div>
 
+            <!-- Articles Source Panel -->
+            <div id="articles-source-panel" class="space-y-3 border-t border-slate-100 dark:border-slate-850 pt-4">
+                <h4 class="text-sm font-semibold text-indigo-500 uppercase tracking-wider text-[11px]">Article Sources Used</h4>
+                <div id="articles-sources-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Dynamically populated source cards -->
+                </div>
+            </div>
+
             <!-- Choose analysis triggers workflow -->
             <div class="border-t border-slate-200/60 dark:border-slate-800/60 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <span class="text-xs text-slate-400 dark:text-slate-500 font-medium">Select an advanced analysis pipeline below to continue:</span>
+                <span class="text-xs text-slate-450 dark:text-slate-500 font-medium">Select an advanced analysis pipeline below to continue:</span>
                 <div class="flex gap-3 w-full sm:w-auto">
-                    <button onclick="generateSentimentAnalysis()" class="flex-grow sm:flex-grow-0 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-premium flex items-center justify-center gap-1.5">
+                    <button id="generate-sentiment-btn" onclick="triggerSentiment()" class="flex-grow sm:flex-grow-0 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-xs font-semibold flex items-center justify-center gap-1.5 transition-premium">
                         <span>📊 Generate Sentiment Analysis</span>
                     </button>
-                    <button onclick="generateEvolutionAnalysis()" class="flex-grow sm:flex-grow-0 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-850 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-semibold transition-premium flex items-center justify-center gap-1.5">
+                    <button id="generate-evolution-btn" disabled onclick="triggerEvolution()" class="flex-grow sm:flex-grow-0 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-xs font-semibold opacity-50 cursor-not-allowed flex items-center justify-center gap-1.5 transition-premium" title="Complete Sentiment Analysis first">
                         <span>📈 Generate Evolution Analysis</span>
                     </button>
                 </div>
             </div>
+
+            <!-- Sentiment Results Panel -->
+            <div id="sentiment-results-panel" class="hidden border-t border-slate-200/60 dark:border-slate-800/60 pt-6 space-y-6 animate-in fade-in duration-300">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-sm font-semibold text-indigo-500 uppercase tracking-wider text-[11px]">Sentiment Intelligence & Manipulation Analysis</h4>
+                    <span id="sentiment-cached-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">Cached</span>
+                </div>
+                
+                <!-- Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Dominant Emotion Card -->
+                    <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/25 flex items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Dominant Emotion</span>
+                            <div id="dominant-emotion-value" class="text-lg font-bold text-slate-850 dark:text-slate-200">-</div>
+                        </div>
+                        <div id="dominant-emotion-icon" class="text-3xl">😐</div>
+                    </div>
+                    
+                    <!-- Risk Indicator Card -->
+                    <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/25 flex items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Manipulation Risk Index</span>
+                            <div id="risk-level-value" class="text-lg font-bold text-slate-850 dark:text-slate-200">-</div>
+                        </div>
+                        <div id="risk-level-badge" class="px-2.5 py-1 text-xs font-extrabold rounded-lg">-</div>
+                    </div>
+                </div>
+                
+                <!-- Charts Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Pie Chart Card -->
+                    <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950/25 flex flex-col space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Emotion Probability Distribution</span>
+                            <button id="export-pie-btn" class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                <span>Export PNG</span>
+                            </button>
+                        </div>
+                        <div class="relative flex-grow flex items-center justify-center min-h-[250px] max-h-[300px]">
+                            <canvas id="emotionPieChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Bar Chart Card -->
+                    <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950/25 flex flex-col space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Emotion Strength Comparison (%)</span>
+                            <button id="export-bar-btn" class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                <span>Export PNG</span>
+                            </button>
+                        </div>
+                        <div class="relative flex-grow flex items-center justify-center min-h-[250px] max-h-[300px]">
+                            <canvas id="emotionBarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Evolution Results Panel -->
+            <div id="evolution-results-panel" class="hidden border-t border-slate-200/60 dark:border-slate-800/60 pt-6 space-y-6 animate-in fade-in duration-300">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-sm font-semibold text-indigo-500 uppercase tracking-wider text-[11px]">Narrative Evolution & Timeline Analysis</h4>
+                    <span id="evolution-cached-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">Cached</span>
+                </div>
+                
+                <!-- Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Narrative Drift Score Card -->
+                    <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/25 flex items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Narrative Drift Score</span>
+                            <div id="drift-score-value" class="text-xl font-extrabold text-slate-850 dark:text-slate-200">-</div>
+                        </div>
+                        <div id="drift-score-badge" class="px-2.5 py-1 text-xs font-extrabold rounded-lg">-</div>
+                    </div>
+                    
+                    <!-- Variants Detected Card -->
+                    <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/25 flex items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Narrative Variants</span>
+                            <div id="variants-count-value" class="text-xl font-extrabold text-slate-850 dark:text-slate-200">-</div>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-650 dark:text-indigo-400 font-bold text-sm">
+                            🧬
+                        </div>
+                    </div>
+
+                    <!-- Dominant Narrative Card -->
+                    <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/25 flex flex-col justify-between gap-2">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Dominant Theme/Headline</span>
+                        <div id="dominant-narrative-value" class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">-</div>
+                    </div>
+                </div>
+
+                <!-- Evolution Summary and Themes -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2 space-y-3">
+                        <h5 class="text-xs font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Narrative Evolution Summary</h5>
+                        <div class="p-5 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/30 dark:bg-slate-950/10">
+                            <p id="evolution-summary-text" class="text-sm text-slate-650 dark:text-slate-350 leading-relaxed font-medium">
+                                -
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Emerging Themes Panel -->
+                    <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950/25 space-y-3">
+                        <h5 class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Emerging Themes (Keywords)</h5>
+                        <div id="emerging-themes-list" class="flex flex-wrap gap-2 pt-1">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Charts Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Timeline Progression -->
+                    <div class="md:col-span-2 p-5 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950/25 flex flex-col space-y-4">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Narrative Lineage & Timeline Progression</span>
+                        <!-- Visual timeline list -->
+                        <div id="timeline-flow" class="relative pl-6 border-l-2 border-slate-200 dark:border-slate-800 space-y-5 pt-2">
+                            <!-- Chronological timeline cards populate here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Cluster Doughnut Chart Card -->
+                    <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950/25 flex flex-col space-y-4">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Narrative Cluster Distribution</span>
+                        <div class="relative flex-grow flex items-center justify-center min-h-[200px] max-h-[250px]">
+                            <canvas id="clusterDoughnutChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+
     </div>
 
     <!-- Recent Activity Section -->
     <div class="space-y-4">
         <h2 class="font-display font-semibold text-sm tracking-tight text-slate-900 dark:text-white px-1">Recent Activity</h2>
-        <div class="border border-slate-200/60 dark:border-slate-800/60 rounded-2xl bg-white dark:bg-slate-900 p-8 text-center text-xs text-slate-450 dark:text-slate-500 font-medium shadow-xs">
-            No activity available yet.
+        <div id="recent-activity-container" class="border border-slate-200/60 dark:border-slate-800/60 rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xs space-y-3">
+            <div id="recent-blank-state" class="text-center py-6 text-xs text-slate-450 dark:text-slate-500 font-medium">
+                No activity available yet.
+            </div>
+            <div id="recent-activity-list" class="hidden divide-y divide-slate-100 dark:divide-slate-850">
+                <!-- Dynamically populated recent searches -->
+            </div>
         </div>
     </div>
 
 </div>
 
 <script>
+    let currentSearchId = null;
+    let pieChartInstance = null;
+    let barChartInstance = null;
+    let clusterDoughnutInstance = null;
+
     function selectPlaceholder(val) {
         document.getElementById('search-input').value = val;
         Toast.show(`Selected suggested topic: "${val}"`, "info");
@@ -151,38 +316,704 @@
         }
 
         Loader.show();
-        setTimeout(() => {
+        const token = localStorage.getItem('access_token');
+        
+        fetch('/api/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ query: query })
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.message || "Search failed."); });
+            }
+            return res.json();
+        })
+        .then(resData => {
             Loader.hide();
-            
-            document.getElementById('mock-summary-text').innerText = `Gemini Summary: "${query}" represents a widely discussed claim. Our database gathered 42 related articles mapping this topic. Initial audits indicate significant framing deviations.`;
-            document.getElementById('mock-rating').innerText = query.toLowerCase().includes('infertility') || query.toLowerCase().includes('hoax') || query.toLowerCase().includes('cancer') ? "Misleading / False" : "Unverified / Pending Audit";
-            
-            document.getElementById('results-blank-state').classList.add('hidden');
-            document.getElementById('results-data-state').classList.remove('hidden');
-            document.getElementById('results-badge').classList.remove('hidden');
-            
-            Toast.show(`Gathered articles and generated narrative summary for: "${query}"`, "success");
-        }, 1000);
+            if (resData.success) {
+                renderSearchResults(resData.data);
+                Toast.show("Successfully executed query and verified claims.", "success");
+                loadRecentActivity(); // Refresh activity feed
+            } else {
+                Toast.show(resData.message || "Failed to analyze query.", "error");
+            }
+        })
+        .catch(err => {
+            Loader.hide();
+            Toast.show(`Analysis failed: ${err.message}`, "error");
+        });
     }
 
-    function generateSentimentAnalysis() {
-        Loader.show();
-        setTimeout(() => {
-            Loader.hide();
-            Toast.show("Sentiment & emotional manipulation metrics calculated (Module 2 Model active).", "success");
-        }, 800);
+    function renderSearchResults(data) {
+        currentSearchId = data.id;
+
+        // Reset evolution analysis trigger button state
+        const evoBtn = document.getElementById('generate-evolution-btn');
+        if (evoBtn) {
+            evoBtn.setAttribute('disabled', 'true');
+            evoBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            evoBtn.title = "Complete Sentiment Analysis first";
+        }
+
+        // 1. Populate summary
+        document.getElementById('summary-text').innerText = data.summary;
+        
+        // 2. Populate verdict & styling
+        const verdictEl = document.getElementById('fact-check-verdict');
+        verdictEl.innerText = data.fact_check_result;
+        
+        if (data.fact_check_result === "MISINFORMATION DETECTED") {
+            verdictEl.className = "font-extrabold text-rose-600 dark:text-rose-450";
+        } else {
+            verdictEl.className = "font-extrabold text-emerald-600 dark:text-emerald-450";
+        }
+        
+        // 3. Populate statistics cards
+        document.getElementById('stat-articles-collected').innerText = `${data.articles_collected} articles`;
+        
+        // Extract unique domains to calculate "Sources Used" count
+        const domains = new Set(data.articles.map(a => a.source));
+        document.getElementById('stat-sources-used').innerText = `${domains.size} sources`;
+        
+        document.getElementById('stat-processing-time').innerText = `${data.processing_time}s`;
+        
+        const createdDate = new Date(data.created_at);
+        document.getElementById('stat-search-date').innerText = createdDate.toLocaleDateString();
+        
+        // 4. Render Articles Source Panel
+        const sourcesContainer = document.getElementById('articles-sources-list');
+        sourcesContainer.innerHTML = '';
+        
+        if (data.articles && data.articles.length > 0) {
+            data.articles.forEach(art => {
+                const dateStr = art.published_at ? new Date(art.published_at).toLocaleDateString() : 'N/A';
+                
+                const artEl = document.createElement('div');
+                artEl.className = "p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/25 space-y-2";
+                artEl.innerHTML = `
+                    <div class="flex flex-wrap justify-between items-start gap-2">
+                        <h5 class="text-xs font-bold text-slate-850 dark:text-slate-200 flex-grow">${escapeHtml(art.title)}</h5>
+                        <span class="text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-medium">${escapeHtml(art.source)}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[10px] text-slate-450 dark:text-slate-500 font-mono">
+                        <span>Published: ${dateStr}</span>
+                        <span>Hash: ${art.content_hash ? art.content_hash.substring(0, 8) : 'N/A'}</span>
+                    </div>
+                    <details class="group mt-2 border border-slate-200/50 dark:border-slate-800/50 rounded-lg p-2.5 bg-white dark:bg-slate-900/50">
+                        <summary class="text-[10px] font-bold cursor-pointer list-none flex justify-between items-center text-indigo-650 dark:text-indigo-400 hover:underline">
+                            <span>Expand Article Content Preview</span>
+                            <svg class="w-3 h-3 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </summary>
+                        <p class="text-[11px] text-slate-600 dark:text-slate-405 leading-relaxed font-normal mt-2 whitespace-pre-line max-h-48 overflow-y-auto pr-1">
+                            ${escapeHtml(art.content)}
+                        </p>
+                    </details>
+                `;
+                sourcesContainer.appendChild(artEl);
+            });
+        } else {
+            sourcesContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No article references stored for this query.</p>';
+        }
+        
+        document.getElementById('results-blank-state').classList.add('hidden');
+        document.getElementById('results-data-state').classList.remove('hidden');
+        document.getElementById('results-badge').classList.remove('hidden');
+
+        // Hide evolution panel by default on new search results
+        document.getElementById('evolution-results-panel').classList.add('hidden');
+
+        // Autoload sentiment if already analyzed, otherwise hide results panel
+        if (data.overall_emotion || data.sentiment_analyzed_at) {
+            autoLoadSentiment(data.id);
+            // Check if evolution is also already generated
+            autoLoadEvolution(data.id);
+        } else {
+            document.getElementById('sentiment-results-panel').classList.add('hidden');
+        }
     }
 
-    function generateEvolutionAnalysis() {
+    function triggerSentiment() {
+        if (!currentSearchId) {
+            Toast.show("No active search query available to analyze.", "warning");
+            return;
+        }
+
+        const btn = document.getElementById('generate-sentiment-btn');
+        btn.disabled = true;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-2 h-3.5 w-3.5 text-indigo-600 dark:text-white inline-block" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Generating Sentiment...</span>
+        `;
+
+        const token = localStorage.getItem('access_token');
+        fetch('/api/sentiment/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ search_id: currentSearchId })
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.message || "Sentiment analysis failed."); });
+            }
+            return res.json();
+        })
+        .then(resData => {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            if (resData.success) {
+                renderSentimentUI(resData.data);
+                Toast.show("Sentiment analysis generated successfully.", "success");
+            } else {
+                Toast.show(resData.message || "Failed to analyze sentiment.", "error");
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            Toast.show(err.message || "An error occurred during sentiment analysis.", "error");
+        });
+    }
+
+    function renderSentimentUI(data) {
+        const panel = document.getElementById('sentiment-results-panel');
+        panel.classList.remove('hidden');
+
+        // Enable evolution analysis button
+        const evoBtn = document.getElementById('generate-evolution-btn');
+        if (evoBtn) {
+            evoBtn.removeAttribute('disabled');
+            evoBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            evoBtn.title = "Generate Evolution Analysis";
+        }
+
+        // Show/hide cached badge
+        const badge = document.getElementById('sentiment-cached-badge');
+        if (data.cached) {
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+
+        // Set dominant emotion
+        const emotionVal = document.getElementById('dominant-emotion-value');
+        const emotionIcon = document.getElementById('dominant-emotion-icon');
+        const domEmotion = data.overall_emotion || "-";
+        emotionVal.innerText = domEmotion;
+
+        const emojiMap = {
+            "Joy": "😊",
+            "Fear": "😨",
+            "Anger": "😡",
+            "Sadness": "😢",
+            "Love": "❤️",
+            "Surprise": "😲"
+        };
+        emotionIcon.innerText = emojiMap[domEmotion] || "😐";
+
+        // Set risk indicator
+        const riskVal = document.getElementById('risk-level-value');
+        const riskBadge = document.getElementById('risk-level-badge');
+        const riskLevel = data.overall_risk_level || "LOW";
+        riskVal.innerText = riskLevel;
+        
+        // Style badge depending on risk
+        riskBadge.innerText = riskLevel;
+        if (riskLevel === "HIGH") {
+            riskBadge.className = "px-2.5 py-1 text-xs font-extrabold rounded-lg bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-450";
+        } else if (riskLevel === "MEDIUM") {
+            riskBadge.className = "px-2.5 py-1 text-xs font-extrabold rounded-lg bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-450";
+        } else {
+            riskBadge.className = "px-2.5 py-1 text-xs font-extrabold rounded-lg bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-450";
+        }
+
+        // Destroy existing chart instances to avoid overlays
+        if (pieChartInstance) pieChartInstance.destroy();
+        if (barChartInstance) barChartInstance.destroy();
+
+        // Render charts
+        const dist = data.emotion_distribution;
+        const labels = Object.keys(dist);
+        const values = Object.values(dist);
+
+        // Chart colors matching Outfit font vibe
+        const colors = [
+            'rgba(99, 102, 241, 0.85)',  // Indigo
+            'rgba(244, 63, 94, 0.85)',   // Rose
+            'rgba(245, 158, 11, 0.85)',  // Amber
+            'rgba(16, 185, 129, 0.85)',  // Emerald
+            'rgba(168, 85, 247, 0.85)',  // Purple
+            'rgba(6, 182, 212, 0.85)'    // Cyan
+        ];
+        const borderColors = [
+            'rgb(99, 102, 241)',
+            'rgb(244, 63, 94)',
+            'rgb(245, 158, 11)',
+            'rgb(16, 185, 129)',
+            'rgb(168, 85, 247)',
+            'rgb(6, 182, 212)'
+        ];
+
+        const isDark = document.documentElement.classList.contains('dark');
+        const textGridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+        const textLabelColor = isDark ? '#94a3b8' : '#475569';
+
+        // 1. Pie Chart
+        const pieCtx = document.getElementById('emotionPieChart').getContext('2d');
+        pieChartInstance = new Chart(pieCtx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors,
+                    borderColor: isDark ? '#0f172a' : '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: textLabelColor,
+                            font: { family: 'Inter', size: 11, weight: '500' }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.label}: ${context.raw}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Bar Chart
+        const barCtx = document.getElementById('emotionBarChart').getContext('2d');
+        barChartInstance = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Emotion Strength',
+                    data: values,
+                    backgroundColor: colors,
+                    borderColor: borderColors,
+                    borderWidth: 1.5,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: textLabelColor,
+                            font: { family: 'Inter', size: 10, weight: '500' }
+                        }
+                    },
+                    y: {
+                        grid: { color: textGridColor },
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            color: textLabelColor,
+                            font: { family: 'Inter', size: 10 },
+                            callback: function(value) { return value + '%'; }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` Strength: ${context.raw}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Wire export buttons
+        document.getElementById('export-pie-btn').onclick = () => exportChartPNG(pieChartInstance, `search_${data.search_id}_emotion_pie.png`);
+        document.getElementById('export-bar-btn').onclick = () => exportChartPNG(barChartInstance, `search_${data.search_id}_emotion_bar.png`);
+    }
+
+    function exportChartPNG(chartInstance, filename) {
+        if (!chartInstance) return;
+        const url = chartInstance.toBase64Image();
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        Toast.show(`Exported chart to ${filename}`, "success");
+    }
+
+    function autoLoadSentiment(searchId) {
+        const token = localStorage.getItem('access_token');
+        fetch(`/api/sentiment/${searchId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        .then(res => {
+            if (res.ok) {
+                return res.json();
+            }
+            throw new Error("No sentiment results yet.");
+        })
+        .then(resData => {
+            if (resData.success) {
+                renderSentimentUI(resData.data);
+            } else {
+                document.getElementById('sentiment-results-panel').classList.add('hidden');
+            }
+        })
+        .catch(() => {
+            document.getElementById('sentiment-results-panel').classList.add('hidden');
+        });
+    }
+
+    function triggerEvolution() {
+        if (!currentSearchId) {
+            Toast.show("No active search query available to analyze.", "warning");
+            return;
+        }
+
+        const btn = document.getElementById('generate-evolution-btn');
+        btn.disabled = true;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-2 h-3.5 w-3.5 text-indigo-600 dark:text-white inline-block" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Generating Evolution...</span>
+        `;
+
+        const token = localStorage.getItem('access_token');
+        fetch('/api/evolution/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ search_id: currentSearchId })
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.message || "Evolution analysis failed."); });
+            }
+            return res.json();
+        })
+        .then(resData => {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            if (resData.success) {
+                renderEvolutionUI(resData.data);
+                Toast.show("Narrative evolution analysis generated successfully.", "success");
+            } else {
+                Toast.show(resData.message || "Failed to analyze evolution.", "error");
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            Toast.show(err.message || "An error occurred during evolution analysis.", "error");
+        });
+    }
+
+    function renderEvolutionUI(data) {
+        const panel = document.getElementById('evolution-results-panel');
+        panel.classList.remove('hidden');
+
+        // Show/hide cached badge
+        const badge = document.getElementById('evolution-cached-badge');
+        if (data.cached) {
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+
+        // Set drift score & style badge depending on risk/drift level
+        const driftVal = document.getElementById('drift-score-value');
+        const driftBadge = document.getElementById('drift-score-badge');
+        const score = data.narrative_drift_score || 0;
+        driftVal.innerText = `${score.toFixed(1)}/100`;
+
+        if (score <= 20.0) {
+            driftBadge.innerText = "STABLE";
+            driftBadge.className = "px-2.5 py-1 text-xs font-extrabold rounded-lg bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-450";
+        } else if (score <= 50.0) {
+            driftBadge.innerText = "MODERATE DRIFT";
+            driftBadge.className = "px-2.5 py-1 text-xs font-extrabold rounded-lg bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-450";
+        } else {
+            driftBadge.innerText = "MUTATED";
+            driftBadge.className = "px-2.5 py-1 text-xs font-extrabold rounded-lg bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-450";
+        }
+
+        // Set variants count & dominant narrative
+        document.getElementById('variants-count-value').innerText = data.total_variants_detected || 0;
+        document.getElementById('dominant-narrative-value').innerText = data.dominant_narrative || "-";
+        
+        // Set evolution summary text
+        document.getElementById('evolution-summary-text').innerText = data.evolution_summary || "";
+
+        // Extract themes and populate tags
+        const themesContainer = document.getElementById('emerging-themes-list');
+        themesContainer.innerHTML = '';
+        
+        // Timeline elements
+        const timelineFlow = document.getElementById('timeline-flow');
+        timelineFlow.innerHTML = '';
+
+        // Extract themes from timeline or summary
+        let keywords = [];
+        const match = data.evolution_summary.match(/(?:themes identified across the text corpus are|top emerging themes are):\s*([^.]+)/i);
+        if (match && match[1]) {
+            keywords = match[1].split(',').map(s => s.trim().replace(/and\s+/g, ''));
+        } else {
+            // fallback keywords
+            keywords = ["vaccine", "infertility", "medical", "spread", "claims", "evidence"];
+        }
+
+        keywords.forEach(kw => {
+            if (kw) {
+                const tag = document.createElement('span');
+                tag.className = "px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-950/30 text-indigo-650 dark:text-indigo-400";
+                tag.innerText = kw;
+                themesContainer.appendChild(tag);
+            }
+        });
+
+        // Populate Timeline Flow
+        const timelineData = data.timeline || [];
+        timelineData.forEach((item, idx) => {
+            const dateStr = item.published_at ? new Date(item.published_at).toLocaleDateString() : 'N/A';
+            const node = document.createElement('div');
+            node.className = "relative space-y-1";
+            
+            // Check if there is a mutation point to this article
+            const mutation = (data.mutation_points || []).find(m => m.to_article_id === item.article_id);
+            let mutationHtml = "";
+            if (mutation) {
+                mutationHtml = `
+                    <div class="mt-2 text-[10px] p-2 rounded-lg bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100/30 dark:border-rose-900/30 text-rose-600 dark:text-rose-450 font-medium">
+                        ⚠️ <strong>Narrative Mutation:</strong> ${escapeHtml(mutation.mutation_type)} (${mutation.reason})
+                    </div>
+                `;
+            }
+
+            node.innerHTML = `
+                <div class="absolute -left-[31px] top-1 w-4 h-4 rounded-full border-2 border-indigo-600 bg-white dark:bg-slate-900 flex items-center justify-center">
+                    <div class="w-1.5 h-1.5 rounded-full ${item.is_baseline ? 'bg-indigo-600' : 'bg-slate-450'}"></div>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="text-xs font-bold text-slate-850 dark:text-slate-200">${escapeHtml(item.title)}</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-medium">${escapeHtml(item.source)}</span>
+                </div>
+                <div class="flex items-center gap-3 text-[10px] text-slate-450 dark:text-slate-500 font-mono">
+                    <span>Published: ${dateStr}</span>
+                    <span>Similarity to Baseline: ${(item.similarity_to_baseline * 100).toFixed(1)}%</span>
+                    <span>Cluster: Variant ${String.fromCharCode(65 + item.cluster_label)}</span>
+                </div>
+                ${mutationHtml}
+            `;
+            timelineFlow.appendChild(node);
+        });
+
+        // 3. Render cluster doughnut chart
+        if (clusterDoughnutInstance) clusterDoughnutInstance.destroy();
+
+        // Calculate distribution of variants
+        const clusterCounts = {};
+        timelineData.forEach(item => {
+            const lbl = `Variant ${String.fromCharCode(65 + item.cluster_label)}`;
+            clusterCounts[lbl] = (clusterCounts[lbl] || 0) + 1;
+        });
+
+        const labels = Object.keys(clusterCounts);
+        const values = Object.values(clusterCounts);
+
+        const colors = [
+            'rgba(99, 102, 241, 0.85)',  // Indigo
+            'rgba(244, 63, 94, 0.85)',   // Rose
+            'rgba(245, 158, 11, 0.85)',  // Amber
+            'rgba(16, 185, 129, 0.85)',  // Emerald
+            'rgba(168, 85, 247, 0.85)',  // Purple
+            'rgba(6, 182, 212, 0.85)'    // Cyan
+        ];
+        
+        const isDark = document.documentElement.classList.contains('dark');
+        const textLabelColor = isDark ? '#94a3b8' : '#475569';
+
+        const dCtx = document.getElementById('clusterDoughnutChart').getContext('2d');
+        clusterDoughnutInstance = new Chart(dCtx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors,
+                    borderColor: isDark ? '#0f172a' : '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: textLabelColor,
+                            font: { family: 'Inter', size: 11, weight: '500' }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function autoLoadEvolution(searchId) {
+        const token = localStorage.getItem('access_token');
+        fetch(`/api/evolution/${searchId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        .then(res => {
+            if (res.ok) {
+                return res.json();
+            }
+            throw new Error("No evolution results yet.");
+        })
+        .then(resData => {
+            if (resData.success) {
+                renderEvolutionUI(resData.data);
+            } else {
+                document.getElementById('evolution-results-panel').classList.add('hidden');
+            }
+        })
+        .catch(() => {
+            document.getElementById('evolution-results-panel').classList.add('hidden');
+        });
+    }
+
+    function loadRecentActivity() {
+        const token = localStorage.getItem('access_token');
+        fetch('/api/users/search-history', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(resData => {
+            if (resData.success) {
+                const searches = resData.data || [];
+                const blankState = document.getElementById('recent-blank-state');
+                const activityList = document.getElementById('recent-activity-list');
+                
+                if (searches.length === 0) {
+                    blankState.classList.remove('hidden');
+                    activityList.classList.add('hidden');
+                } else {
+                    blankState.classList.add('hidden');
+                    activityList.classList.remove('hidden');
+                    
+                    // Show top 3 recent searches
+                    const topSearches = searches.slice(0, 3);
+                    activityList.innerHTML = '';
+                    
+                    topSearches.forEach(search => {
+                        const date = new Date(search.created_at);
+                        const dateString = date.toLocaleDateString();
+                        
+                        const item = document.createElement('div');
+                        item.className = "py-3 flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950/20 px-2 rounded-xl transition-premium";
+                        item.onclick = () => loadHistoricalSearch(search.id);
+                        
+                        item.innerHTML = `
+                            <div class="space-y-0.5 text-left">
+                                <div class="text-xs font-bold text-slate-850 dark:text-slate-200 line-clamp-1">${escapeHtml(search.query)}</div>
+                                <div class="text-[10px] text-slate-400 dark:text-slate-500 font-mono">${dateString} • ${search.articles_collected} articles</div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                ${search.overall_emotion ? `
+                                    <span class="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400">
+                                        ${search.overall_emotion}
+                                    </span>
+                                ` : ''}
+                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            </div>
+                        `;
+                        activityList.appendChild(item);
+                    });
+                }
+            }
+        })
+        .catch(() => {});
+    }
+
+    function loadHistoricalSearch(searchId) {
         Loader.show();
-        setTimeout(() => {
+        const token = localStorage.getItem('access_token');
+        fetch(`/api/search/${searchId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to fetch historical search details.");
+            return res.json();
+        })
+        .then(resData => {
             Loader.hide();
-            Toast.show("Narrative mutation evolution tree traced in DB (Module 3 Model active).", "success");
-        }, 900);
+            if (resData.success) {
+                renderSearchResults(resData.data);
+                Toast.show("Loaded search query from history.", "success");
+            } else {
+                Toast.show(resData.message || "Failed to load historical search.", "error");
+            }
+        })
+        .catch(err => {
+            Loader.hide();
+            Toast.show(err.message, "error");
+        });
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
     // Set greeting name, avatar, and registration date dynamically
     window.addEventListener('load', () => {
+        // 1. Fetch user profile
         fetch('/api/users/profile')
         .then(res => res.json())
         .then(data => {
@@ -219,6 +1050,16 @@
             }
         })
         .catch(() => {});
+
+        // 2. Load recent activity list
+        loadRecentActivity();
+
+        // 3. Check for url parameters to auto-load search history query
+        const urlParams = new URLSearchParams(window.location.search);
+        const searchIdParam = urlParams.get('search_id');
+        if (searchIdParam) {
+            loadHistoricalSearch(searchIdParam);
+        }
     });
 </script>
 {% endblock %}

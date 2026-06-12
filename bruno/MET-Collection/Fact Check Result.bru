@@ -1,0 +1,29 @@
+meta {
+  name: Fact Check Result
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{baseUrl}}/api/search
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "query": "COVID vaccine infertility"
+  }
+}
+
+tests {
+  test("Veracity check should return valid verdict structure", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().success).to.be.true;
+    expect(["MISINFORMATION DETECTED", "CORRECT"]).to.include(res.getBody().data.fact_check_result);
+  });
+}

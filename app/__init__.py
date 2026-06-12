@@ -82,6 +82,9 @@ def register_blueprints(app):
     from app.blueprints.dataset import dataset_bp
     from app.blueprints.model import model_bp
     from app.blueprints.nlp import nlp_bp
+    from app.blueprints.search import search_bp
+    from app.blueprints.sentiment import sentiment_bp
+    from app.blueprints.evolution import evolution_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(user_bp)
@@ -90,6 +93,10 @@ def register_blueprints(app):
     app.register_blueprint(dataset_bp)
     app.register_blueprint(model_bp)
     app.register_blueprint(nlp_bp)
+    app.register_blueprint(search_bp)
+    app.register_blueprint(sentiment_bp)
+    app.register_blueprint(evolution_bp)
+
 
 def register_error_handlers(app):
     """Registers global handlers for HTTP error codes to return structured JSON payloads"""

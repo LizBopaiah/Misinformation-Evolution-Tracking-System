@@ -9,6 +9,7 @@ from app.services.clustering_service import ClusteringService
 from app.services.visualization_service import VisualizationService
 from app.services.knowledge_graph_service import KnowledgeGraphService
 from app.services.report_service import ReportService
+from app.services.summarization_service import SummarizationService
 
 __all__ = [
     'DatasetService',
@@ -21,5 +22,7 @@ __all__ = [
     'ClusteringService',
     'VisualizationService',
     'KnowledgeGraphService',
-    'ReportService'
+    'ReportService',
+    'SummarizationService'
 ]
+

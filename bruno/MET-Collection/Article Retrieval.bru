@@ -1,0 +1,27 @@
+meta {
+  name: Article Retrieval
+  type: http
+  seq: 19
+}
+
+get {
+  url: {{baseUrl}}/api/articles/1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("Article details should retrieve or return 404 if not found", function() {
+    var status = res.getStatus();
+    expect([200, 404]).to.include(status);
+    if (status === 200) {
+      expect(res.getBody().success).to.be.true;
+      expect(res.getBody().data.content).to.be.a('string');
+      expect(res.getBody().data.url).to.be.a('string');
+    }
+  });
+}

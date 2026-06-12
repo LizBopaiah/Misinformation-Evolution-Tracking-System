@@ -10,6 +10,9 @@ class Article(db.Model):
     source = db.Column(db.String(120), nullable=True)
     url = db.Column(db.String(512), unique=True, nullable=True, index=True)
     published_at = db.Column(db.DateTime, nullable=True)
+    search_id = db.Column(db.Integer, db.ForeignKey('search_history.id', ondelete='CASCADE'), nullable=True, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=True, index=True)
+    content_hash = db.Column(db.String(64), nullable=True, index=True)
     created_at = db.Column(db.DateTime, default=db.func.now(), nullable=False)
     updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now(), nullable=False)
 
@@ -21,16 +24,12 @@ class Article(db.Model):
         'EvolutionResult',
         backref='article',
         lazy=True,
-        foreign_keys='EvolutionResult.article_id',
+        foreign_keys='EvolutionResult.baseline_article_id',
         cascade="all, delete-orphan"
     )
-    
-    mutations = db.relationship(
-        'EvolutionResult',
-        backref='parent',
-        lazy=True,
-        foreign_keys='EvolutionResult.parent_id'
-    )
+
+    search_history = db.relationship('SearchHistory', backref=db.backref('associated_articles', lazy=True, cascade="all, delete-orphan"))
+    user = db.relationship('User', backref=db.backref('associated_articles', lazy=True, cascade="all, delete-orphan"))
 
     def to_dict(self):
         """Serialize article object"""
@@ -41,6 +40,10 @@ class Article(db.Model):
             'source': self.source,
             'url': self.url,
             'published_at': self.published_at.isoformat() if self.published_at else None,
+            'search_id': self.search_id,
+            'user_id': self.user_id,
+            'content_hash': self.content_hash,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
+

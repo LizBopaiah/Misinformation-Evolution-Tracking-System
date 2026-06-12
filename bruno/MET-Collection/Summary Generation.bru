@@ -1,0 +1,27 @@
+meta {
+  name: Summary Generation
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{baseUrl}}/api/search/1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("Search details and summary should retrieve or return 404 if not found", function() {
+    var status = res.getStatus();
+    expect([200, 404]).to.include(status);
+    if (status === 200) {
+      expect(res.getBody().success).to.be.true;
+      expect(res.getBody().data.summary).to.be.a('string');
+      expect(res.getBody().data.articles).to.be.an('array');
+    }
+  });
+}

@@ -88,9 +88,10 @@ MET/
 │   │   └── log.py               # SystemLog (internal security/admin log records)
 │   ├── services/                # Business logic blocks & services
 │   │   ├── __init__.py          # Bundle services
-│   │   ├── search_service.py    # Google Custom Search API placeholder
-│   │   ├── scraping_service.py  # BS4 Web scraping parsing placeholder
-│   │   ├── fact_checking_service.py # Gemini LLM fact check auditing placeholder
+│   │   ├── search_service.py    # Google Custom Search API with caching and duplicate removal
+│   │   ├── scraping_service.py  # Multi-method web scraping & TF-IDF similarity deduplication
+│   │   ├── summarization_service.py # Gemini-powered narrative summarization with localized fallback
+│   │   ├── fact_checking_service.py # Hybrid veracity classification mapping
 │   │   ├── sentiment_service.py # Sentiment model classification placeholder
 │   │   ├── evolution_service.py # Mutator story tracking placeholder
 │   │   ├── similarity_service.py # Vector text similarity placeholder
@@ -110,6 +111,7 @@ MET/
 │   │   ├── dataset.py           # Dataset status, stats, and preview endpoints
 │   │   ├── model.py             # Classifier status and performance endpoints
 │   │   ├── nlp.py               # NLP token preprocessing sandbox API
+│   │   ├── search.py            # Search execution, history retrieval, article detail endpoints
 │   │   └── main.py              # Page rendering, system health validation
 │   ├── static/
 │   │   ├── css/
@@ -135,9 +137,15 @@ MET/
 │       ├── Dataset Preview.bru
 │       ├── Model Status.bru
 │       ├── Model Performance.bru
-│       └── NLP Preprocess.bru
+│       ├── NLP Preprocess.bru
+│       ├── Search.bru
+│       ├── Article Retrieval.bru
+│       ├── Search History.bru
+│       ├── Summary Generation.bru
+│       └── Fact Check Result.bru
 ├── scripts/
-│   └── train_models.py          # Model training pipeline (Logistic Regression vs Naive Bayes)
+│   ├── train_models.py          # Model training pipeline (Logistic Regression vs Naive Bayes)
+│   └── verify_module4.py        # Automated test verification for search and scraping
 ├── reports/
 │   ├── fake_news_confusion_matrix.png # Confusion matrix plot for Fake News classifier
 │   ├── liar_confusion_matrix.png      # Confusion matrix plot for LIAR classifier
@@ -147,6 +155,8 @@ MET/
 ├── .gitignore                   # Exclusions: Virtualenv, build, logs, databases, IDE files
 ├── app.py                       # App running entrypoint (python app.py)
 ├── requirements.txt             # Production-grade requirements list
+├── MODULE_3_VERIFICATION_REPORT.md # Verification metrics for NLP datasets and pipelines
+├── MODULE_4_VERIFICATION_REPORT.md # Verification metrics for Custom Search and Scraping
 └── PROJECT_PROGRESS.md          # Project roadmap tracking document (this file)
 ```
 
@@ -155,9 +165,9 @@ MET/
 ## 📊 Database, API, and Dataset Statuses
 
 ### 1. Database Status (SQLite)
-* **Status**: INITIALIZED & TESTED
-* **Schema**: Created User, SearchHistory, Article, FactCheckResult, SentimentResult, EvolutionResult, NarrativeCluster, and SystemLog schemas with foreign key references, timestamps, indices, and delete cascade behaviors.
-* **Auto-Init**: Dynamically initializes `app.db` automatically on first run via app context.
+* **Status**: INITIALIZED, MIGRATED & TESTED
+* **Schema**: Created User, SearchHistory (updated), Article (updated), FactCheckResult, SentimentResult, EvolutionResult, NarrativeCluster, and SystemLog schemas with foreign key references, timestamps, indices, and delete cascade behaviors.
+* **Auto-Init**: Dynamically initializes and manages database context via Alembic migrations.
 
 ### 2. API Endpoint Status
 * **API Version**: `v1`
@@ -174,18 +184,26 @@ MET/
   * `GET /api/models/status` 🟢 (Online)
   * `GET /api/models/performance` 🟢 (Online)
   * `POST /api/nlp/preprocess` 🟢 (Online)
+  * `POST /api/search` 🔑 (Requires Bearer token, Online)
+  * `GET /api/search/<id>` 🔑 (Requires Bearer token, Online)
+  * `GET /api/articles/<id>` 🔑 (Requires Bearer token, Online)
+  * `GET /api/search-history` 🔑 (Requires Bearer token, Online)
+  * `POST /api/sentiment/analyze` 🔑 (Requires Bearer token, Online)
+  * `GET /api/sentiment/<search_id>` 🔑 (Requires Bearer token, Online)
+  * `POST /api/evolution/analyze` 🔑 (Requires Bearer token, Online)
+  * `GET /api/evolution/<search_id>` 🔑 (Requires Bearer token, Online)
 
 ### 3. Dataset Status
 * **Directories Connected**:
   * `MET/Fake News Detection` (Exists in root directory)
   * `MET/LIAR Dataset` (Exists in root directory)
   * `MET/Emotion Dataset` (Exists in root directory)
-* **Integration Layer**: `DatasetService` class in `app/services/dataset_service.py` initialized to references paths, with placeholders configured for loading standard schemas in future modules.
+* **Integration Layer**: `DatasetService` class in `app/services/dataset_service.py` loaded and validated, with summaries cached in `instance/dataset_stats.json`.
 
 ---
 
 ## ⚠️ Known Issues / Limitations
-* External APIs (Gemini, Google Custom Search) and model processes are currently represented by placeholder routines. They will be integrated in subsequent modules.
+* External APIs (Gemini, Google Custom Search) and model processes are currently represented by placeholder routines or cached fallbacks when credentials are unconfigured.
 
 ---
 
@@ -215,7 +233,46 @@ MET/
 
 ---
 
-## 🔮 Next Module – Module 4: Web Scraping & Fact Checking Verification
-* Build out the search engine framework integrating Google Custom Search API.
-* Implement BeautifulSoup content scraper to fetch article texts from query hits.
-* Integrate Gemini LLM to construct claims summaries and audit fact veracity ratings.
+## 🚀 Module 4 – Search, Article Collection & Narrative Summarization (Status: COMPLETED ✅)
+
+### Implemented Features
+1. **Web Search Service**: Google Custom Search API integration in `SearchService` with automatic result ranking, URL duplicate removal, 24-hour result caching, and realistic mock fallback.
+2. **Multi-Source Scraping Fallback Chain**: Robust article scraper in `ScrapingService` utilizing `newspaper3k` -> `trafilatura` -> `BeautifulSoup` fallback pipeline. Extracts title, body, source, publication date, and computes SHA-256 content hashes.
+3. **TF-IDF Article Deduplication**: Computes content similarity matrices using scikit-learn's TF-IDF vectorizer and filters out articles with content similarity exceeding 95%.
+4. **Narrative Summarization Service**: Gemini API text generator in `SummarizationService` creating query context-rich summaries, with a localized extractive sentence word-frequency summarizer fallback for offline operation.
+5. **Hybrid Fact-Check Verifier**: Verification pipeline in `FactCheckingService` combining the trained Module 3 Fake News and LIAR models with Gemini narrative checking, returning standard verdicts: `MISINFORMATION DETECTED` or `CORRECT`.
+6. **Search History & Caching**: Extends `SearchHistory` database model with summary, fact_check_result, articles_collected, processing_time, and search_status. Stores article metadata and association queries on SQLite.
+7. **Complete Search API Endpoints**: Exposes endpoints (`POST /api/search`, `GET /api/search/<id>`, `GET /api/articles/<id>`, and `GET /api/search-history`) tied to authenticated JWT user identities.
+8. **Responsive Search Dashboard UI**: Elegant dashboard client code updating UI elements: audit statistics cards (articles collected, unique sources, processing speed), summary blocks, and an expandable article accordion.
+9. **Automated Verification Script**: Integrated `scripts/verify_module4.py` confirming correct API routing, SQLite table updates, fast caching (processing time from 14s to 11ms), and duplicate filtering.
+10. **Hardening & Security Audits**: Integrated custom in-memory API rate-limiting `@rate_limit`, strict search query payload bounds verification (max 200 chars), SQLite connection event listener enforcement for `PRAGMA foreign_keys=ON` cascade deletes, and robust mock fallbacks for search and LLM API failures, all validated via `scripts/verify_hardening.py` regression tests.
+
+---
+
+## 🚀 Module 5A – Sentiment Intelligence Engine (Status: COMPLETED ✅)
+
+### Implemented Features
+1. **Safe Database Migration Strategy**: Evolved table schema using Alembic, adding columns `search_id`, `dominant_emotion`, `confidence`, `risk_level`, and `model_version` to `SentimentResult` (legacy columns kept nullable for compatibility), and overall cache fields to `SearchHistory`.
+2. **Standardized Risk Grading & Probability Normalization**: Converts predictions to 0-100% percentages, applying tiered risk evaluations (`LOW`/`MEDIUM`/`HIGH`) based on `Fear` (>40% HIGH, >20% MEDIUM) and `Fear + Anger` (>60% HIGH, >30% MEDIUM).
+3. **Sentiment Result Caching & Duplicate Prevention**: If all articles associated with a search have sentiment analyses, bypass inference and return stored entries directly with `cached: true`. Employs upsert logic to avoid duplicate rows.
+4. **Batch Processing Optimization**: Leverages `nlp_service.preprocess_texts_batch` and batch vectorizer transforms to evaluate whole article sets simultaneously.
+5. **Dynamic Dashboard Charting**: Renders Emotion Pie Chart and Emotion Bar Chart inside `dashboard.html` using Chart.js, featuring PNG exports, loading transitions, and search history auto-loading.
+6. **Graceful Failures & Fallbacks**: Returns HTTP `503 Service Unavailable` on missing model files without crashing the server.
+7. **Automated Verification Script**: Created `scripts/verify_sentiment.py` verifying all rules, caching, rate limiting, and fallbacks.
+
+---
+
+## 🚀 Module 5B – Narrative Evolution Tracking (Status: COMPLETED ✅)
+
+### Implemented Features
+1. **Upgraded SQLite Database Schemas**: Shifted `EvolutionResult` model to track chronological search analysis aggregates (`baseline_article_id`, `narrative_drift_score`, `total_variants_detected`, `dominant_narrative`, `evolution_summary`, `mutation_points_json`, `timeline_json`). Configured cascading purges on parent deletion.
+2. **Dynamic Vectorization & Cosine Similarity Matrix**: Vectorizes article collections via TF-IDF (incorporating custom preprocessed spaCy tokens) and calculates $N \times N$ similarity mappings.
+3. **Hierarchical Narrative Clustering**: Groups articles into variant streams using scikit-learn `AgglomerativeClustering` based on cosine distance.
+4. **Weighted Narrative Drift Formula**: Computes temporal drift score ($0-100\%$) indicating `Stable`, `Moderate`, or `Significant` mutation compared to the timeline baseline article.
+5. **Emerging Themes (Keywords) & Mutation Extraction**: Extracts top 10 keywords overall based on TF-IDF sum of weights. Flags consecutive timeline pairs whose similarity drops below $85\%$ as narrative mutation points.
+6. **Gemini 1.5 Flash Summary & Custom Fallback**: Generates narrative evolution analysis summaries via Gemini API, falling back to a detailed template-based report for offline operations.
+7. **REST APIs & Route Caching**: Implemented JWT-protected endpoints (`POST /api/evolution/analyze` and `GET /api/evolution/<search_id>`) that serve cached runs immediately and prevent duplicate DB writes.
+8. **Interactive UI Timeline & Cluster Charts**: Fully enabled the "Generate Evolution Analysis" button in `dashboard.html` (unlocks after sentiment analysis is done). Renders Narrative Drift score badges, total variants count, theme keyword tags, interactive chronological timelines with flagged mutation alerts, and Chart.js cluster distribution doughnut charts.
+9. **Automated Verification Script**: Created `scripts/verify_evolution.py` validating auth controls, access isolation, empty sets, single articles, drift score bounds, clustering, caching, cascade deletes, and ordering fallbacks.
+
+
