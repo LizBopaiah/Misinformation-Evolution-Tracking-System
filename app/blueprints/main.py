@@ -24,6 +24,11 @@ def dashboard():
     """Renders authenticated search analysis console"""
     return render_template('dashboard.html')
 
+@main_bp.route('/research')
+def research_dashboard():
+    """Renders authenticated research comparison console"""
+    return render_template('research.html')
+
 @main_bp.route('/profile')
 def profile_page():
     """Renders authenticated user profile dashboard"""

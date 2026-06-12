@@ -1,0 +1,536 @@
+{% extends 'base.html' %}
+
+{% block title %}Comparative Analytics | MET Research Platform{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Route Protection: Redirect unauthenticated users immediately to login page
+    if (!localStorage.getItem('access_token')) {
+        window.location.href = '/login?redirect=' + window.location.pathname;
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8 animate-in fade-in duration-300 max-w-6xl mx-auto py-4">
+
+    <!-- Header Section -->
+    <div class="p-6 md:p-8 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-gradient-to-tr from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 shadow-sm relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-2xl"></div>
+        <div class="space-y-1 relative z-10">
+            <h1 class="text-xl md:text-2xl font-display font-semibold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                <span>🔬 Research Intelligence & Comparative Analytics</span>
+            </h1>
+            <p class="text-slate-500 dark:text-slate-400 text-xs max-w-xl leading-relaxed">
+                Transform isolated query analyses into a connected intelligence profile. Compare multiple search topics to map semantic overlap, identify emotional manipulation patterns, and generate comparative research documents.
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Left Selection Console -->
+        <div class="space-y-6">
+            <div class="p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-4">
+                <h3 class="font-display font-semibold text-sm text-slate-850 dark:text-slate-200">Select Searches to Compare</h3>
+                <p class="text-[11px] text-slate-400 dark:text-slate-550">Choose between 2 and 10 completed queries from your history to construct a comparative snaphot.</p>
+                
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Report Name</label>
+                    <input type="text" id="report-name-input" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/20 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="e.g., Vaccine & 5G Narrative Overlap">
+                </div>
+
+                <div class="border-t border-slate-100 dark:border-slate-800/80 pt-4 space-y-3">
+                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider block">Completed Queries</span>
+                    
+                    <!-- Search History Selection List -->
+                    <div id="searches-selection-list" class="max-h-64 overflow-y-auto space-y-2 pr-1">
+                        <!-- Populated dynamically -->
+                        <p class="text-xs text-slate-400 text-center py-4">Loading searches history...</p>
+                    </div>
+                </div>
+
+                <button id="run-compare-btn" onclick="triggerCompare()" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-md shadow-indigo-500/10 transition-premium flex items-center justify-center gap-1.5">
+                    <span>Generate Comparative Report</span>
+                </button>
+            </div>
+
+            <!-- Historical Reports List -->
+            <div class="p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-4">
+                <h3 class="font-display font-semibold text-sm text-slate-850 dark:text-slate-200">Historical Snapshot Reports</h3>
+                <div id="historical-reports-list" class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    <!-- Populated dynamically -->
+                    <p class="text-xs text-slate-400 text-center py-4">No snapshots saved yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Results Panels -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Blank State -->
+            <div id="compare-blank-state" class="border border-slate-200/60 dark:border-slate-800/60 rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-8 text-center py-20 space-y-3">
+                <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800/80 flex items-center justify-center mx-auto text-slate-450 dark:text-slate-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                </div>
+                <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">No comparison generated yet.</p>
+                <p class="text-xs text-slate-400 dark:text-slate-550 max-w-xs mx-auto leading-relaxed">Select at least two queries from the left console to generate research comparative analytics.</p>
+            </div>
+
+            <!-- Analysis State -->
+            <div id="compare-data-state" class="hidden space-y-6 animate-in fade-in duration-300">
+                
+                <!-- Report Metrics & Top summary -->
+                <div class="border border-slate-200/60 dark:border-slate-800/60 rounded-3xl bg-white dark:bg-slate-900 shadow-sm p-6 md:p-8 space-y-6">
+                    <div class="border-b border-slate-200/60 dark:border-slate-800/60 pb-4 flex flex-wrap items-center justify-between gap-4">
+                        <div class="space-y-0.5">
+                            <h3 id="report-title-display" class="font-display font-semibold text-base text-slate-900 dark:text-white">-</h3>
+                            <span id="report-cached-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">Cached Snapshot</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="export-json-btn" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium">
+                                📥 Export JSON
+                            </button>
+                            <button id="export-pdf-btn" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center gap-1 transition-premium">
+                                🖨️ Printable HTML (PDF)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Metrics Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Cross Search Similarity Score Card -->
+                        <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/25 flex items-center justify-between gap-4">
+                            <div class="space-y-1">
+                                <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Cross-Search Similarity Score</span>
+                                <div id="similarity-score-value" class="text-xl font-extrabold text-slate-850 dark:text-slate-200">-</div>
+                            </div>
+                            <div id="similarity-score-badge" class="px-2.5 py-1 text-xs font-extrabold rounded-lg">-</div>
+                        </div>
+                        
+                        <!-- Shared Themes Tags -->
+                        <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/25 flex flex-col justify-between gap-2">
+                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Overlapping Themes (Keywords)</span>
+                            <div id="shared-themes-list" class="flex flex-wrap gap-1.5 pt-0.5">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Narrative Summary Explanatory Report -->
+                    <div class="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-4">
+                        <h4 class="text-sm font-semibold text-indigo-500 uppercase tracking-wider text-[11px]">Research Summary & Comparative Report</h4>
+                        <div class="p-5 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/30 dark:bg-slate-950/10">
+                            <p id="report-summary-text" class="text-sm text-slate-650 dark:text-slate-350 leading-relaxed font-medium">
+                                -
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emotional Comparisons -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Radar Chart comparing aggregated emotions -->
+                    <div class="p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-4">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider block">Emotion Profile Overlay (Radar)</span>
+                        <div class="relative min-h-[250px] max-h-[300px] flex items-center justify-center">
+                            <canvas id="emotionsRadarChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Bar Chart comparing risk levels and volumes -->
+                    <div class="p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-4">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider block">Shared Emotional Pattern strengths</span>
+                        <div class="relative min-h-[250px] max-h-[300px] flex items-center justify-center">
+                            <canvas id="emotionsBarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Heatmap grid representing pairwise similarities -->
+                <div class="p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-4">
+                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider block">Narrative Similarity Heatmap (Top 25 Match Strengths)</span>
+                    <p class="text-[11px] text-slate-450 dark:text-slate-500">Pairs of articles from different searches showing strong narrative overlap (similarity &ge; 60%).</p>
+                    
+                    <div class="overflow-x-auto pt-2">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 uppercase tracking-wider text-[10px] font-bold">
+                                    <th class="py-2.5 px-3">Article in Topic A</th>
+                                    <th class="py-2.5 px-3">Article in Topic B</th>
+                                    <th class="py-2.5 px-3 text-right">Similarity Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="shared-narratives-table-body" class="divide-y divide-slate-100 dark:divide-slate-850">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    let radarChartInstance = null;
+    let barChartInstance = null;
+
+    // Load available completed searches into selection pane on startup
+    window.addEventListener('load', () => {
+        loadCompletedSearches();
+        loadSavedReports();
+    });
+
+    function loadCompletedSearches() {
+        const list = document.getElementById('searches-selection-list');
+        const token = localStorage.getItem('access_token');
+        
+        fetch('/api/users/search-history', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(resData => {
+            if (resData.success) {
+                const searches = (resData.data || []).filter(s => s.status === 'completed');
+                if (searches.length === 0) {
+                    list.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No completed searches available.</p>';
+                    return;
+                }
+                
+                list.innerHTML = '';
+                searches.forEach(search => {
+                    const row = document.createElement('label');
+                    row.className = "flex items-start gap-3 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 hover:bg-slate-50 dark:hover:bg-slate-900/50 cursor-pointer transition-premium text-left";
+                    row.innerHTML = `
+                        <input type="checkbox" name="compare-search-checkbox" value="${search.id}" class="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        <div class="space-y-0.5">
+                            <div class="text-xs font-bold text-slate-850 dark:text-slate-200 line-clamp-1">${escapeHtml(search.query)}</div>
+                            <div class="text-[10px] text-slate-400 dark:text-slate-500 font-mono">ID: ${search.id} • Verdict: ${search.fact_check_result || 'UNAUDITED'}</div>
+                        </div>
+                    `;
+                    list.appendChild(row);
+                });
+            } else {
+                list.innerHTML = `<p class="text-xs text-rose-500 text-center py-4">${resData.message}</p>`;
+            }
+        })
+        .catch(err => {
+            list.innerHTML = '<p class="text-xs text-rose-500 text-center py-4">Failed to load search queries.</p>';
+        });
+    }
+
+    function triggerCompare() {
+        const checkboxes = document.querySelectorAll('input[name="compare-search-checkbox"]:checked');
+        const searchIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        const reportName = document.getElementById('report-name-input').value.trim();
+
+        if (searchIds.length < 2 || searchIds.length > 10) {
+            Toast.show("Please select between 2 and 10 queries to generate comparative analytics.", "warning");
+            return;
+        }
+
+        if (!reportName) {
+            Toast.show("Please provide a name for the research report.", "warning");
+            return;
+        }
+
+        Loader.show();
+        const token = localStorage.getItem('access_token');
+
+        fetch('/api/research/compare', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                search_ids: searchIds,
+                report_name: reportName
+            })
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.message || "Comparison query failed."); });
+            }
+            return res.json();
+        })
+        .then(resData => {
+            Loader.hide();
+            if (resData.success) {
+                renderReportUI(resData.data);
+                Toast.show("Comparative research report generated successfully.", "success");
+                loadSavedReports(); // Refresh side list
+            } else {
+                Toast.show(resData.message || "Failed to compare topics.", "error");
+            }
+        })
+        .catch(err => {
+            Loader.hide();
+            Toast.show(err.message || "An error occurred during comparative analysis.", "error");
+        });
+    }
+
+    function renderReportUI(data) {
+        document.getElementById('compare-blank-state').classList.add('hidden');
+        document.getElementById('compare-data-state').classList.remove('hidden');
+
+        // Set title & cached badge
+        document.getElementById('report-title-display').innerText = data.report_name;
+        const badge = document.getElementById('report-cached-badge');
+        if (data.cached) {
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+
+        // Set similarity score card
+        const score = data.similarity_score || 0;
+        document.getElementById('similarity-score-value').innerText = `${score.toFixed(1)}/100`;
+        const scoreBadge = document.getElementById('similarity-score-badge');
+        scoreBadge.innerText = score <= 30.0 ? "LOW CORRELATION" : (score <= 60.0 ? "MODERATE SIMILARITY" : "HIGH CORRELATION");
+        if (score <= 30.0) {
+            scoreBadge.className = "px-2.5 py-1 text-xs font-extrabold rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400";
+        } else if (score <= 60.0) {
+            scoreBadge.className = "px-2.5 py-1 text-xs font-extrabold rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-450";
+        } else {
+            scoreBadge.className = "px-2.5 py-1 text-xs font-extrabold rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400";
+        }
+
+        // Set themes
+        const themesContainer = document.getElementById('shared-themes-list');
+        themesContainer.innerHTML = '';
+        if (data.shared_themes && data.shared_themes.length > 0) {
+            data.shared_themes.forEach(theme => {
+                const tag = document.createElement('span');
+                tag.className = "px-2 py-0.5 text-[10px] font-bold rounded-md bg-indigo-50 dark:bg-indigo-950/30 text-indigo-650 dark:text-indigo-400 uppercase tracking-wider";
+                tag.innerText = theme;
+                themesContainer.appendChild(tag);
+            });
+        } else {
+            themesContainer.innerHTML = '<span class="text-xs text-slate-400">No shared keywords found.</span>';
+        }
+
+        // Set summary report text
+        document.getElementById('report-summary-text').innerText = data.summary;
+
+        // Set exports actions hooks
+        document.getElementById('export-json-btn').onclick = () => {
+            window.open(`/api/research/report/${data.id}/export?format=json`, '_blank');
+        };
+        document.getElementById('export-pdf-btn').onclick = () => {
+            window.open(`/api/research/report/${data.id}/export?format=pdf`, '_blank');
+        };
+
+        // Populate similarity heat table
+        const tableBody = document.getElementById('shared-narratives-table-body');
+        tableBody.innerHTML = '';
+        if (data.shared_claims && data.shared_claims.length > 0) {
+            data.shared_claims.forEach(claim => {
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-50/50 dark:hover:bg-slate-950/20";
+                row.innerHTML = `
+                    <td class="py-3 px-3">
+                        <div class="font-bold text-slate-800 dark:text-slate-200 line-clamp-1">${escapeHtml(claim.title_a)}</div>
+                        <div class="text-[9px] text-slate-400 font-mono">Source: ${escapeHtml(claim.source_a)}</div>
+                    </td>
+                    <td class="py-3 px-3">
+                        <div class="font-bold text-slate-800 dark:text-slate-200 line-clamp-1">${escapeHtml(claim.title_b)}</div>
+                        <div class="text-[9px] text-slate-400 font-mono">Source: ${escapeHtml(claim.source_b)}</div>
+                    </td>
+                    <td class="py-3 px-3 text-right font-extrabold text-indigo-600 dark:text-indigo-400 text-xs">
+                        ${(claim.similarity_score * 100).toFixed(1)}%
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        } else {
+            tableBody.innerHTML = '<tr><td colspan="3" class="text-center py-6 text-xs text-slate-400">No overlapping narrative pairs discovered (similarity &ge; 60%).</td></tr>';
+        }
+
+        // 3. Render charts
+        renderCharts(data.shared_emotions);
+    }
+
+    function renderCharts(emotions) {
+        if (radarChartInstance) radarChartInstance.destroy();
+        if (barChartInstance) barChartInstance.destroy();
+
+        const labels = Object.keys(emotions);
+        const values = Object.values(emotions);
+
+        const isDark = document.documentElement.classList.contains('dark');
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+        const textLabelColor = isDark ? '#94a3b8' : '#475569';
+
+        // Colors
+        const color = 'rgba(99, 102, 241, 0.7)';
+        const borderColor = 'rgb(99, 102, 241)';
+
+        // 1. Radar Chart
+        const rCtx = document.getElementById('emotionsRadarChart').getContext('2d');
+        radarChartInstance = new Chart(rCtx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Emotional Distribution Overlay (%)',
+                    data: values,
+                    backgroundColor: color,
+                    borderColor: borderColor,
+                    borderWidth: 2,
+                    pointBackgroundColor: borderColor
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        grid: { color: gridColor },
+                        angleLines: { color: gridColor },
+                        pointLabels: {
+                            color: textLabelColor,
+                            font: { family: 'Inter', size: 10, weight: 'bold' }
+                        },
+                        ticks: {
+                            color: textLabelColor,
+                            backdropColor: 'transparent',
+                            font: { size: 8 }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // 2. Bar Chart
+        const bCtx = document.getElementById('emotionsBarChart').getContext('2d');
+        
+        // Harness HARMONIOUS color arrays
+        const colors = [
+            'rgba(99, 102, 241, 0.85)',  // Indigo
+            'rgba(244, 63, 94, 0.85)',   // Rose
+            'rgba(245, 158, 11, 0.85)',  // Amber
+            'rgba(16, 185, 129, 0.85)',  // Emerald
+            'rgba(168, 85, 247, 0.85)',  // Purple
+            'rgba(6, 182, 212, 0.85)'    // Cyan
+        ];
+
+        barChartInstance = new Chart(bCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Aggregated Intensity (%)',
+                    data: values,
+                    backgroundColor: colors,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: textLabelColor,
+                            font: { family: 'Inter', size: 10, weight: '500' }
+                        }
+                    },
+                    y: {
+                        grid: { color: gridColor },
+                        ticks: {
+                            color: textLabelColor,
+                            font: { family: 'Inter', size: 9 },
+                            callback: function(v) { return v + '%'; }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    function loadSavedReports() {
+        const list = document.getElementById('historical-reports-list');
+        const token = localStorage.getItem('access_token');
+
+        fetch('/api/research/reports', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(resData => {
+            if (resData.success) {
+                const reports = resData.data || [];
+                if (reports.length === 0) {
+                    list.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-4">No snapshots saved yet.</p>';
+                    return;
+                }
+
+                list.innerHTML = '';
+                reports.forEach(report => {
+                    const row = document.createElement('div');
+                    row.className = "p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/10 hover:bg-slate-50 dark:hover:bg-slate-900/50 cursor-pointer transition-premium text-left flex justify-between items-center gap-3";
+                    row.onclick = () => loadReportDetails(report.id);
+                    row.innerHTML = `
+                        <div class="space-y-0.5">
+                            <div class="text-xs font-bold text-slate-850 dark:text-slate-200 line-clamp-1">${escapeHtml(report.report_name)}</div>
+                            <div class="text-[10px] text-slate-400 dark:text-slate-500 font-mono">Similarity: ${report.similarity_score.toFixed(1)}/100</div>
+                        </div>
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    `;
+                    list.appendChild(row);
+                });
+            }
+        })
+        .catch(() => {});
+    }
+
+    function loadReportDetails(reportId) {
+        Loader.show();
+        const token = localStorage.getItem('access_token');
+
+        fetch(`/api/research/report/${reportId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to load historical report.");
+            return res.json();
+        })
+        .then(resData => {
+            Loader.hide();
+            if (resData.success) {
+                renderReportUI(resData.data);
+                Toast.show("Loaded comparative snapshot.", "success");
+            } else {
+                Toast.show(resData.message, "error");
+            }
+        })
+        .catch(err => {
+            Loader.hide();
+            Toast.show(err.message, "error");
+        });
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+</script>
+{% endblock %}

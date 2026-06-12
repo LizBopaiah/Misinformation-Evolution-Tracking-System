@@ -275,4 +275,19 @@ MET/
 8. **Interactive UI Timeline & Cluster Charts**: Fully enabled the "Generate Evolution Analysis" button in `dashboard.html` (unlocks after sentiment analysis is done). Renders Narrative Drift score badges, total variants count, theme keyword tags, interactive chronological timelines with flagged mutation alerts, and Chart.js cluster distribution doughnut charts.
 9. **Automated Verification Script**: Created `scripts/verify_evolution.py` validating auth controls, access isolation, empty sets, single articles, drift score bounds, clustering, caching, cascade deletes, and ordering fallbacks.
 
+---
+
+## 🚀 Module 6 – Research Intelligence & Comparative Analytics (Status: COMPLETED ✅)
+
+### Implemented Features
+1. **New Database Models**: Added `ResearchReport` and `ComparisonResult` models under `app/models/report.py` containing custom getter/setter fields for serializing lists and dictionaries to SQLite text columns.
+2. **Deterministic Cache Hash**: Calculated unique SHA256 hashes from sorted search query IDs to act as a cache lookup mechanism. Repeat requests fetch from the database instantly.
+3. **Cross-Search Similarity Score**: Computes a weighted average of text (50%), emotional profile cosine similarity (30%), and veracity check results (20%) mapped onto a 0-100 scale.
+4. **Shared Themes, Emotions, and Narratives**: Extract overlapping key themes across searches, compute averaged emotional distribution states, and construct article narrative similarity pairs (cosine similarity &ge; 60%) capped at the top 25 matches.
+5. **Report Exports**: Integrated full JSON data schema export and printable HTML formatting (which serves as an offline-friendly PDF layout generation tool).
+6. **Comparison Control Limits**: Restricts searches to between 2 and 10 queries per comparison request.
+7. **Interactive Analytics Dashboard**: Designed a new dashboard view `/research` loaded with Radar Charts and Bar Charts from Chart.js, comparative text results, overlap metrics, and export action buttons.
+8. **Automated Verification Suite**: Built `scripts/verify_research.py` confirming authentication guards, ownership bounds, calculations, cache hit behaviors, and cascade deletes. All tests passing cleanly.
+
+
 
