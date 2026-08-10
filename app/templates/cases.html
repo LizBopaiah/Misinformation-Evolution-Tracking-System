@@ -1,0 +1,585 @@
+{% extends 'base.html' %}
+
+{% block title %}Investigation Workspace & Cases | MET Research Platform{% endblock %}
+
+{% block head_extra %}
+<script>
+    // Route Protection
+    if (!localStorage.getItem('access_token')) {
+        window.location.href = '/login?redirect=' + window.location.pathname;
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8 animate-in fade-in duration-300 max-w-6xl mx-auto py-4">
+
+    <!-- Header Panel -->
+    <div class="p-6 md:p-8 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-gradient-to-tr from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 shadow-sm relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-2xl"></div>
+        <div class="space-y-1 relative z-10">
+            <h1 class="text-xl md:text-2xl font-display font-semibold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                <span>📁 Investigation Case Workspace</span>
+            </h1>
+            <p class="text-slate-500 dark:text-slate-400 text-xs max-w-xl leading-relaxed">
+                Organize searches, sentiments, narrative mutations, comparative reports, and dossiers into dedicated containers to manage your research pipeline.
+            </p>
+        </div>
+        <button onclick="openCreateCaseModal()" class="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-500/10 transition-premium relative z-10 flex items-center gap-1.5 self-start sm:self-center">
+            <span>➕</span> New Investigation Case
+        </button>
+    </div>
+
+    <!-- Stats Overview Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between">
+            <div class="space-y-0.5">
+                <span class="text-[9px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider block">Total Cases</span>
+                <span id="stat-total-cases" class="text-xl font-extrabold text-slate-850 dark:text-slate-100">0</span>
+            </div>
+            <div class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-850 flex items-center justify-center font-bold text-sm">📁</div>
+        </div>
+        <div class="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between">
+            <div class="space-y-0.5">
+                <span class="text-[9px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider block">Active Cases</span>
+                <span id="stat-active-cases" class="text-xl font-extrabold text-slate-850 dark:text-slate-100">0</span>
+            </div>
+            <div class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 flex items-center justify-center font-bold text-sm">🟢</div>
+        </div>
+        <div class="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between">
+            <div class="space-y-0.5">
+                <span class="text-[9px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider block">Archived Cases</span>
+                <span id="stat-archived-cases" class="text-xl font-extrabold text-slate-850 dark:text-slate-100">0</span>
+            </div>
+            <div class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-850 flex items-center justify-center font-bold text-sm">📦</div>
+        </div>
+        <div class="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between">
+            <div class="space-y-0.5">
+                <span class="text-[9px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider block">High Priority Cases</span>
+                <span id="stat-high-cases" class="text-xl font-extrabold text-slate-850 dark:text-slate-100">0</span>
+            </div>
+            <div class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/20 text-rose-600 flex items-center justify-center font-bold text-sm">🔥</div>
+        </div>
+    </div>
+
+    <!-- Main Workspace Split -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Left Side: Cases List -->
+        <div class="lg:col-span-4 space-y-4">
+            <h3 class="font-display font-semibold text-xs text-slate-400 uppercase tracking-wider">Investigation Cases List</h3>
+            <div id="cases-list-container" class="space-y-3">
+                <!-- Cases cards populated dynamically -->
+                <div class="p-6 text-center text-slate-450 dark:text-slate-500 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800/60">
+                    Loading cases list...
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Selected Case Details & Workspace -->
+        <div id="case-workspace-container" class="lg:col-span-8 hidden space-y-6">
+            <!-- Populated dynamically when case is selected -->
+        </div>
+
+        <div id="case-no-selection" class="lg:col-span-8 p-12 text-center border border-dashed border-slate-350 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center gap-3">
+            <span class="text-4xl">📁</span>
+            <div class="font-display font-semibold text-slate-850 dark:text-slate-200">No Case Selected</div>
+            <p class="text-slate-400 dark:text-slate-500 text-xs max-w-sm leading-relaxed">
+                Select an investigation case from the left list panel to load its evidence workspace dashboard, paginated linked elements, statistics, and audit activity logs.
+            </p>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Create Case Modal -->
+<div id="create-case-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" onclick="closeCreateCaseModal()"></div>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-250 dark:border-slate-800 w-full max-w-md p-6 shadow-xl relative z-10 animate-in zoom-in-95 duration-200 space-y-4">
+        <h3 id="modal-title" class="font-display font-semibold text-sm text-slate-900 dark:text-white">Create New Case Container</h3>
+        <input type="hidden" id="edit-case-id">
+        <div class="space-y-3">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Case Title</label>
+                <input type="text" id="case-input-title" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/30 text-slate-850 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="e.g. COVID Vaccine Investigation">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Description</label>
+                <textarea id="case-input-desc" rows="3" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/30 text-slate-850 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Summary or objective of research..."></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Status</label>
+                    <select id="case-input-status" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/30 text-slate-850 dark:text-slate-200 focus:outline-none">
+                        <option value="OPEN">OPEN</option>
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="COMPLETED">COMPLETED</option>
+                        <option value="ARCHIVED">ARCHIVED</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Priority</label>
+                    <select id="case-input-priority" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/30 text-slate-850 dark:text-slate-200 focus:outline-none">
+                        <option value="LOW">LOW</option>
+                        <option value="MEDIUM">MEDIUM</option>
+                        <option value="HIGH">HIGH</option>
+                        <option value="CRITICAL">CRITICAL</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+            <button onclick="closeCreateCaseModal()" class="px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-premium">Cancel</button>
+            <button id="modal-submit-btn" onclick="saveCase()" class="px-3.5 py-1.5 rounded-lg bg-indigo-650 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md shadow-indigo-500/10 transition-premium">Save Case</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let allCases = [];
+    let selectedCaseId = null;
+    let currentPage = 1;
+    const itemsPageSize = 25;
+
+    window.addEventListener('load', () => {
+        fetchCasesList();
+    });
+
+    function fetchCasesList() {
+        const token = localStorage.getItem('access_token');
+        fetch('/api/cases', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(resData => {
+            if (resData.success) {
+                allCases = resData.data.cases || [];
+                renderStats();
+                renderCasesList();
+            } else {
+                Toast.show("Failed to retrieve cases list.", "error");
+            }
+        })
+        .catch(() => {
+            Toast.show("Network error fetching cases.", "error");
+        });
+    }
+
+    function renderStats() {
+        document.getElementById('stat-total-cases').innerText = allCases.length;
+        document.getElementById('stat-active-cases').innerText = allCases.filter(c => c.status === 'ACTIVE').length;
+        document.getElementById('stat-archived-cases').innerText = allCases.filter(c => c.status === 'ARCHIVED').length;
+        document.getElementById('stat-high-cases').innerText = allCases.filter(c => c.priority === 'HIGH' || c.priority === 'CRITICAL').length;
+    }
+
+    function renderCasesList() {
+        const container = document.getElementById('cases-list-container');
+        if (allCases.length === 0) {
+            container.innerHTML = `
+                <div class="p-6 text-center text-slate-450 dark:text-slate-500 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 text-xs font-medium">
+                    No cases created yet. Create a case container to organize your research.
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = '';
+        allCases.forEach(c => {
+            const card = document.createElement('div');
+            card.onclick = () => selectCase(c.id);
+            
+            // Highlight selected case
+            const isSelected = c.id === selectedCaseId;
+            const borderClass = isSelected 
+                ? "border-indigo-500 dark:border-indigo-650 bg-indigo-50/20 dark:bg-indigo-950/10" 
+                : "border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-350 dark:hover:border-slate-700";
+
+            // Priority badge styling
+            let prioColor = "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400";
+            if (c.priority === 'HIGH') prioColor = "bg-orange-50 text-orange-600 dark:bg-orange-950/20 dark:text-orange-400";
+            if (c.priority === 'CRITICAL') prioColor = "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400";
+
+            // Status badge styling
+            let statusColor = "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400";
+            if (c.status === 'ACTIVE') statusColor = "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400";
+            if (c.status === 'ARCHIVED') statusColor = "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-500";
+
+            card.className = `p-4 rounded-2xl border ${borderClass} cursor-pointer transition-premium space-y-3 shadow-sm`;
+            card.innerHTML = `
+                <div class="flex items-start justify-between gap-3">
+                    <div class="space-y-1">
+                        <h4 class="font-display font-semibold text-xs text-slate-850 dark:text-slate-200 line-clamp-1">${escapeHtml(c.title)}</h4>
+                        <p class="text-slate-400 dark:text-slate-500 text-[10px] line-clamp-1">${escapeHtml(c.description || 'No description.')}</p>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${prioColor}">${c.priority}</span>
+                </div>
+                <div class="flex items-center justify-between text-[9px] text-slate-400 dark:text-slate-500 font-medium">
+                    <span class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${statusColor}">${c.status}</span>
+                    <span>${new Date(c.created_at).toLocaleDateString()}</span>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function selectCase(id) {
+        selectedCaseId = id;
+        currentPage = 1;
+        renderCasesList(); // Highlight active
+        fetchCaseDashboard(id, currentPage);
+    }
+
+    function fetchCaseDashboard(caseId, page) {
+        const token = localStorage.getItem('access_token');
+        Loader.show();
+        fetch(`/api/cases/${caseId}?page=${page}&page_size=${itemsPageSize}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Case access denied or not found.");
+            return res.json();
+        })
+        .then(resData => {
+            Loader.hide();
+            if (resData.success) {
+                renderCaseWorkspace(resData.data);
+            }
+        })
+        .catch(err => {
+            Loader.hide();
+            Toast.show(err.message, "error");
+            document.getElementById('case-workspace-container').classList.add('hidden');
+            document.getElementById('case-no-selection').classList.remove('hidden');
+        });
+    }
+
+    function renderCaseWorkspace(data) {
+        const container = document.getElementById('case-workspace-container');
+        const noSelection = document.getElementById('case-no-selection');
+        
+        container.classList.remove('hidden');
+        noSelection.classList.add('hidden');
+
+        const details = data.case_details;
+        const stats = data.statistics;
+        const timeline = data.timeline;
+        const isArchived = details.status === 'ARCHIVED';
+
+        // Set priority badge
+        let prioColor = "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400";
+        if (details.priority === 'HIGH') prioColor = "bg-orange-50 text-orange-600 dark:bg-orange-950/20 dark:text-orange-400";
+        if (details.priority === 'CRITICAL') prioColor = "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400";
+
+        let archiveBtn = isArchived 
+            ? `<span class="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[10px] text-slate-500 font-bold uppercase tracking-wider">📦 Archived</span>`
+            : `<button onclick="archiveCase(${details.id})" class="px-2.5 py-1.5 rounded border border-slate-200 hover:border-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:border-slate-800 text-[10px] font-semibold transition-premium">📦 Archive Case</button>`;
+
+        let editBtn = isArchived 
+            ? ''
+            : `<button onclick="openEditCaseModal(${JSON.stringify(details).replace(/"/g, '&quot;')})" class="px-2.5 py-1.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400 text-[10px] font-semibold transition-premium">✏️ Edit Details</button>`;
+
+        // Construct Linked Items Lists
+        const makeSection = (title, icon, items, type) => {
+            if (items.length === 0) return '';
+            let rowsHtml = '';
+            items.forEach(item => {
+                let statusBadge = `<span class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 dark:bg-slate-850 dark:text-slate-400">${item.item_status || 'completed'}</span>`;
+                if (item.item_status === 'completed' || item.item_status === 'ACTIVE' || item.item_status === 'CORRECT') {
+                    statusBadge = `<span class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400">${item.item_status}</span>`;
+                } else if (item.item_status === 'MISINFORMATION DETECTED' || item.item_status === 'HIGH' || item.item_status === 'CRITICAL') {
+                    statusBadge = `<span class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400">${item.item_status}</span>`;
+                }
+
+                let removeBtn = isArchived 
+                    ? ''
+                    : `<button onclick="removeItem(${details.id}, '${type}', ${item.item_id})" class="text-slate-400 hover:text-rose-500 font-bold transition-premium text-xs" title="Detach Artifact">✕</button>`;
+
+                rowsHtml += `
+                    <div class="flex items-center justify-between gap-4 py-2 border-b border-slate-100 dark:border-slate-850 last:border-0 last:pb-0">
+                        <div class="space-y-0.5">
+                            <span class="font-bold text-slate-850 dark:text-slate-200 text-xs line-clamp-1">${escapeHtml(item.item_title)}</span>
+                            <span class="text-[9px] text-slate-450 font-mono mt-0.5">Attached ID: ${item.item_id} | Linked At: ${new Date(item.created_at).toLocaleString()}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            ${statusBadge}
+                            ${removeBtn}
+                        </div>
+                    </div>
+                `;
+            });
+
+            return `
+                <div class="p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-3">
+                    <h4 class="font-display font-semibold text-xs text-slate-850 dark:text-slate-200 flex items-center gap-1.5">${icon} ${title}</h4>
+                    <div class="space-y-2 divide-y divide-slate-100 dark:divide-slate-850">${rowsHtml}</div>
+                </div>
+            `;
+        };
+
+        // Render Pagination Controls
+        const pag = data.pagination;
+        let pagHtml = '';
+        if (pag.total_pages > 1) {
+            pagHtml = `
+                <div class="flex items-center justify-between pt-2">
+                    <span class="text-[10px] text-slate-450">Showing items page ${pag.page} of ${pag.total_pages} (${pag.total_items} total artifacts)</span>
+                    <div class="flex items-center gap-1">
+                        <button onclick="changePage(${details.id}, ${pag.page - 1})" ${pag.page === 1 ? 'disabled' : ''} class="px-2 py-1 border border-slate-200 dark:border-slate-800 text-[10px] rounded hover:bg-slate-50 dark:hover:bg-slate-850 disabled:opacity-40 transition-premium">◀ Prev</button>
+                        <button onclick="changePage(${details.id}, ${pag.page + 1})" ${pag.page === pag.total_pages ? 'disabled' : ''} class="px-2 py-1 border border-slate-200 dark:border-slate-800 text-[10px] rounded hover:bg-slate-50 dark:hover:bg-slate-850 disabled:opacity-40 transition-premium">Next ▶</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render Timeline
+        let timelineHtml = '<div class="text-[11px] text-slate-400 py-4 text-center">No case activity history available.</div>';
+        if (timeline && timeline.length > 0) {
+            timelineHtml = '';
+            timeline.slice(0, 10).forEach(act => {
+                let actionEmoji = "📝";
+                let actionLabel = act.action.replace('_', ' ');
+                if (act.action === 'CREATED_CASE') actionEmoji = "🆕";
+                if (act.action === 'UPDATED_CASE') actionEmoji = "🔧";
+                if (act.action === 'ARCHIVED_CASE') actionEmoji = "📦";
+                if (act.action === 'ATTACHED_ITEM') actionEmoji = "📎";
+                if (act.action === 'DETACHED_ITEM') actionEmoji = "✂️";
+
+                let detailsText = "";
+                if (act.item_type) {
+                    detailsText = `linked ${act.item_type} ID ${act.item_id}`;
+                }
+
+                timelineHtml += `
+                    <div class="flex items-start gap-3 border-l-2 border-slate-100 dark:border-slate-800 pl-4 relative pb-4 last:pb-0">
+                        <div class="absolute -left-[7px] w-3 h-3 rounded-full bg-indigo-500 border-2 border-white dark:border-slate-900 mt-1"></div>
+                        <div class="space-y-0.5">
+                            <div class="text-xs font-semibold text-slate-850 dark:text-slate-200 flex items-center gap-1.5">
+                                <span>${actionEmoji}</span>
+                                <span>${actionLabel}</span>
+                                <span class="text-[10px] text-slate-400 font-normal">${detailsText}</span>
+                            </div>
+                            <div class="text-[9px] text-slate-400">${new Date(act.created_at).toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        container.innerHTML = `
+            <!-- Top Summary Card -->
+            <div class="p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 shadow-sm space-y-4">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-base font-display font-semibold text-slate-900 dark:text-white">${escapeHtml(details.title)}</h2>
+                            <span class="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${prioColor}">${details.priority}</span>
+                        </div>
+                        <p class="text-slate-500 dark:text-slate-450 text-xs">${escapeHtml(details.description || 'No description provided.')}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        ${editBtn}
+                        ${archiveBtn}
+                    </div>
+                </div>
+
+                <!-- Case stats breakdown -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                    <div class="p-3 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-100 dark:border-slate-850 flex flex-col">
+                        <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Searches Linked</span>
+                        <span class="text-base font-extrabold text-slate-800 dark:text-slate-200">${stats.search_count}</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-100 dark:border-slate-850 flex flex-col">
+                        <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Reports & Dossiers</span>
+                        <span class="text-base font-extrabold text-slate-800 dark:text-slate-200">${stats.comparison_count + stats.export_count}</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-100 dark:border-slate-850 flex flex-col">
+                        <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Misinformation Audits</span>
+                        <span class="text-base font-extrabold text-rose-650 dark:text-rose-400">${stats.misinformation_count}</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-100 dark:border-slate-850 flex flex-col">
+                        <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">High Risk Emotions</span>
+                        <span class="text-base font-extrabold text-indigo-650 dark:text-indigo-400">${stats.high_risk_sentiment_count}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Linked Artifact Sections -->
+            <div class="space-y-4">
+                <h3 class="font-display font-semibold text-xs text-slate-400 uppercase tracking-wider">Linked Workspace Artifacts</h3>
+                ${makeSection("Linked Topic Searches", "🔍", data.searches, "search")}
+                ${makeSection("Comparative Analytics Reports", "📊", data.comparisons, "comparison")}
+                ${makeSection("Veracity Sentiment Summaries", "❤️", data.sentiments, "sentiment")}
+                ${makeSection("Narrative Mutation Timelines", "🧬", data.evolution, "evolution")}
+                ${makeSection("Exported Evidence Dossiers", "📥", data.exports, "export")}
+                
+                ${pagHtml}
+            </div>
+
+            <!-- Timeline activities -->
+            <div class="p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-4">
+                <h3 class="font-display font-semibold text-xs text-slate-850 dark:text-slate-200">Chronological Activity Log Timeline</h3>
+                <div class="relative pt-2">
+                    ${timelineHtml}
+                </div>
+            </div>
+        `;
+    }
+
+    function changePage(caseId, page) {
+        currentPage = page;
+        fetchCaseDashboard(caseId, currentPage);
+    }
+
+    function removeItem(caseId, type, itemId) {
+        if (!confirm(`Are you sure you want to unlink this ${type} artifact from the case? The original item will not be deleted.`)) {
+            return;
+        }
+
+        const token = localStorage.getItem('access_token');
+        Loader.show();
+        fetch(`/api/cases/${caseId}/items/${type}/${itemId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(resData => {
+            Loader.hide();
+            if (resData.success) {
+                Toast.show("Artifact unlinked successfully.", "success");
+                fetchCaseDashboard(caseId, currentPage); // Reload
+            } else {
+                Toast.show(resData.message, "error");
+            }
+        })
+        .catch(() => {
+            Loader.hide();
+            Toast.show("Network error unlinking artifact.", "error");
+        });
+    }
+
+    function archiveCase(caseId) {
+        if (!confirm("Are you sure you want to archive this case? An archived case can still be viewed but cannot be modified (no attaching/detaching items).")) {
+            return;
+        }
+
+        const token = localStorage.getItem('access_token');
+        Loader.show();
+        fetch(`/api/cases/${caseId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(resData => {
+            Loader.hide();
+            if (resData.success) {
+                Toast.show("Case archived successfully.", "success");
+                fetchCasesList(); // Reload list
+                selectCase(caseId); // Reload dashboard view (locked style)
+            } else {
+                Toast.show(resData.message, "error");
+            }
+        })
+        .catch(() => {
+            Loader.hide();
+            Toast.show("Network error archiving case.", "error");
+        });
+    }
+
+    // Modal Controls
+    function openCreateCaseModal() {
+        document.getElementById('modal-title').innerText = "Create New Investigation Case";
+        document.getElementById('edit-case-id').value = '';
+        document.getElementById('case-input-title').value = '';
+        document.getElementById('case-input-desc').value = '';
+        document.getElementById('case-input-status').value = 'OPEN';
+        document.getElementById('case-input-priority').value = 'MEDIUM';
+        
+        // Enable status edit for new case
+        document.getElementById('case-input-status').disabled = false;
+        
+        document.getElementById('create-case-modal').classList.remove('hidden');
+    }
+
+    function openEditCaseModal(c) {
+        document.getElementById('modal-title').innerText = "Edit Case Details";
+        document.getElementById('edit-case-id').value = c.id;
+        document.getElementById('case-input-title').value = c.title;
+        document.getElementById('case-input-desc').value = c.description || '';
+        document.getElementById('case-input-status').value = c.status;
+        document.getElementById('case-input-priority').value = c.priority;
+        
+        document.getElementById('create-case-modal').classList.remove('hidden');
+    }
+
+    function closeCreateCaseModal() {
+        document.getElementById('create-case-modal').classList.add('hidden');
+    }
+
+    function saveCase() {
+        const token = localStorage.getItem('access_token');
+        const editId = document.getElementById('edit-case-id').value;
+        
+        const title = document.getElementById('case-input-title').value;
+        const description = document.getElementById('case-input-desc').value;
+        const status = document.getElementById('case-input-status').value;
+        const priority = document.getElementById('case-input-priority').value;
+
+        if (!title || !title.trim()) {
+            Toast.show("Case Title is required.", "warning");
+            return;
+        }
+
+        const bodyData = {
+            title: title.trim(),
+            description: description.trim(),
+            status: status,
+            priority: priority
+        };
+
+        const url = editId ? `/api/cases/${editId}` : '/api/cases';
+        const method = editId ? 'PUT' : 'POST';
+
+        Loader.show();
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(bodyData)
+        })
+        .then(res => res.json())
+        .then(resData => {
+            Loader.hide();
+            closeCreateCaseModal();
+            if (resData.success) {
+                Toast.show("Case details saved successfully.", "success");
+                fetchCasesList();
+                if (editId) {
+                    selectCase(parseInt(editId));
+                } else if (resData.data && resData.data.id) {
+                    selectCase(resData.data.id);
+                }
+            } else {
+                Toast.show(resData.message, "error");
+            }
+        })
+        .catch(() => {
+            Loader.hide();
+            closeCreateCaseModal();
+            Toast.show("Network error saving case.", "error");
+        });
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+</script>
+{% endblock %}

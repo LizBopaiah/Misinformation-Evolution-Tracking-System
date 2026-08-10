@@ -8,6 +8,9 @@ from app.models.cluster import NarrativeCluster
 from app.models.log import SystemLog
 from app.models.report import ResearchReport, ComparisonResult
 from app.models.export import ExportRecord
+from app.models.case import InvestigationCase, CaseItem, CaseActivity
+from app.models.credibility import SourceCredibility, SourceCredibilityHistory
+from app.models.explainability import ExplainabilityResult
 
 __all__ = [
     'User',
@@ -20,5 +23,11 @@ __all__ = [
     'SystemLog',
     'ResearchReport',
     'ComparisonResult',
-    'ExportRecord'
+    'ExportRecord',
+    'InvestigationCase',
+    'CaseItem',
+    'CaseActivity',
+    'SourceCredibility',
+    'SourceCredibilityHistory',
+    'ExplainabilityResult'
 ]

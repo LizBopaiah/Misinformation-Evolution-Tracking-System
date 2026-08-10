@@ -39,6 +39,11 @@ def exports_page():
     """Renders authenticated user exports dossier page"""
     return render_template('exports.html')
 
+@main_bp.route('/cases')
+def cases_page():
+    """Renders authenticated case management workspace"""
+    return render_template('cases.html')
+
 @main_bp.route('/search-history')
 def search_history_page():
     """Renders authenticated user query logs"""

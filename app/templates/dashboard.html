@@ -76,8 +76,14 @@
                 <button onclick="triggerExport('fact_audit', 'pdf')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">
                     📋 Export Fact Audit (PDF)
                 </button>
-                <button onclick="triggerExport('dossier', 'pdf')" class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center gap-1 transition-premium">
+                <button onclick="triggerExport('explainability', 'pdf')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">
+                    🔍 Export XAI (PDF)
+                </button>
+                <button onclick="triggerExport('dossier', 'pdf')" class="px-2.5 py-1.5 rounded-lg bg-indigo-650 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center gap-1 transition-premium mr-1">
                     📁 Export Dossier (PDF)
+                </button>
+                <button onclick="openAddToCaseModal('search', currentSearchId)" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">
+                    📂 Add To Case
                 </button>
             </div>
         </div>
@@ -119,6 +125,10 @@
                             <span id="stat-sources-used" class="font-semibold text-slate-700 dark:text-slate-300">-</span>
                         </div>
                         <div class="flex justify-between items-center py-1 border-b border-slate-100/50 dark:border-slate-850/50">
+                            <span class="text-slate-450">Avg Source Trust:</span>
+                            <span id="stat-avg-trust" class="font-bold text-slate-700 dark:text-slate-300">-</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 border-b border-slate-100/50 dark:border-slate-850/50">
                             <span class="text-slate-450">Processing Time:</span>
                             <span id="stat-processing-time" class="font-semibold text-slate-700 dark:text-slate-300">-</span>
                         </div>
@@ -137,20 +147,134 @@
                 <div id="articles-sources-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Dynamically populated source cards -->
                 </div>
-            </div>
-
-            <!-- Choose analysis triggers workflow -->
+            <            <!-- Choose analysis triggers workflow -->
             <div class="border-t border-slate-200/60 dark:border-slate-800/60 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <span class="text-xs text-slate-450 dark:text-slate-500 font-medium">Select an advanced analysis pipeline below to continue:</span>
                 <div class="flex gap-3 w-full sm:w-auto">
                     <button id="generate-sentiment-btn" onclick="triggerSentiment()" class="flex-grow sm:flex-grow-0 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-xs font-semibold flex items-center justify-center gap-1.5 transition-premium">
-                        <span>📊 Generate Sentiment Analysis</span>
+                        <span>📊 Sentiment</span>
                     </button>
                     <button id="generate-evolution-btn" disabled onclick="triggerEvolution()" class="flex-grow sm:flex-grow-0 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-xs font-semibold opacity-50 cursor-not-allowed flex items-center justify-center gap-1.5 transition-premium" title="Complete Sentiment Analysis first">
-                        <span>📈 Generate Evolution Analysis</span>
+                        <span>📈 Evolution</span>
+                    </button>
+                    <button id="generate-xai-btn" onclick="triggerXAI()" class="flex-grow sm:flex-grow-0 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-xs font-semibold flex items-center justify-center gap-1.5 transition-premium">
+                        <span>🔍 AI Transparency & XAI</span>
                     </button>
                 </div>
             </div>
+
+            <!-- AI Transparency Panel -->
+            <div id="xai-results-panel" class="hidden border-t border-slate-200/60 dark:border-slate-800/60 pt-6 space-y-6 animate-in fade-in duration-300">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-2">
+                        <h4 class="text-sm font-semibold text-indigo-500 uppercase tracking-wider text-[11px]">AI Explainability & Model Governance Audit</h4>
+                        <span id="xai-fallback-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-amber-550/20 text-amber-600 font-bold uppercase tracking-wider">Local Fallback Active</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- radial gauge for confidence -->
+                    <div class="p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950/25 flex flex-col space-y-4">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Overall Model Confidence</span>
+                        <div class="relative flex-grow flex items-center justify-center min-h-[180px] max-h-[220px]">
+                            <canvas id="xaiConfidenceChart"></canvas>
+                        </div>
+                        <div class="text-center">
+                            <span id="xai-confidence-label" class="text-lg font-extrabold text-slate-800 dark:text-slate-150">-</span>
+                            <span id="xai-confidence-value" class="text-xs text-slate-450 block">-</span>
+                        </div>
+                    </div>
+
+                    <!-- feature importance horizontal bar chart -->
+                    <div class="md:col-span-2 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950/25 flex flex-col space-y-4">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Top Feature Importance Drivers</span>
+                        <div class="relative flex-grow min-h-[200px]">
+                            <canvas id="xaiFeaturesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Executive Summary and Reason Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2 space-y-3">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Executive Explanation Summary</span>
+                        <div class="p-5 rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/30 dark:bg-slate-950/10">
+                            <p id="xai-summary-text" class="text-sm text-slate-650 dark:text-slate-350 leading-relaxed font-medium">
+                                -
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- model metadata -->
+                    <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/20 space-y-3">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Model Governance Registry</span>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between items-center py-1 border-b border-slate-100/50 dark:border-slate-850/50">
+                                <span class="text-slate-450">Model Name:</span>
+                                <span id="xai-model-name" class="font-semibold text-slate-700 dark:text-slate-300">-</span>
+                            </div>
+                            <div class="flex justify-between items-center py-1 border-b border-slate-100/50 dark:border-slate-850/50">
+                                <span class="text-slate-450">Model Version:</span>
+                                <span id="xai-model-version" class="font-semibold text-slate-700 dark:text-slate-300">-</span>
+                            </div>
+                            <div class="flex justify-between items-center py-1 border-b border-slate-100/50 dark:border-slate-850/50">
+                                <span class="text-slate-450">Vectorizer:</span>
+                                <span id="xai-vectorizer-version" class="font-semibold text-slate-700 dark:text-slate-300">-</span>
+                            </div>
+                            <div class="flex justify-between items-center py-1 border-b border-slate-100/50 dark:border-slate-850/50">
+                                <span class="text-slate-450">Pipeline:</span>
+                                <span id="xai-pipeline-version" class="font-semibold text-slate-700 dark:text-slate-300">-</span>
+                            </div>
+                            <div class="flex justify-between items-center py-1 border-b border-slate-100/50 dark:border-slate-850/50">
+                                <span class="text-slate-450">Inference Mode:</span>
+                                <span id="xai-inference-method" class="font-bold text-slate-700 dark:text-slate-300">-</span>
+                            </div>
+                            <div class="flex justify-between items-center py-1">
+                                <span class="text-slate-450">Latency Overhead:</span>
+                                <span id="xai-latency" class="font-semibold text-slate-700 dark:text-slate-300">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Evidence supporting vs contradicting -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    <div class="space-y-3">
+                        <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-450 uppercase tracking-wider block">Supporting Evidence Corroboration</span>
+                        <div id="xai-evidence-for-list" class="space-y-3 max-h-60 overflow-y-auto pr-1">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <span class="text-[10px] font-bold text-rose-600 dark:text-rose-450 uppercase tracking-wider block">Contradicting / Counter-Evidence Segments</span>
+                        <div id="xai-evidence-against-list" class="space-y-3 max-h-60 overflow-y-auto pr-1">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collapsible technical reasoning blocks -->
+                <details class="group mt-2 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 bg-white dark:bg-slate-950/20">
+                    <summary class="text-xs font-bold cursor-pointer list-none flex justify-between items-center text-indigo-650 dark:text-indigo-400 hover:underline">
+                        <span>Collapsible Model Reasoning & Limitations Details</span>
+                        <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </summary>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4 text-xs space-y-4 md:space-y-0">
+                        <div class="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <h5 class="font-bold text-slate-700 dark:text-slate-300 uppercase text-[9px] tracking-wider mb-2">Confidence Explanation</h5>
+                            <p id="xai-confidence-desc" class="text-slate-600 dark:text-slate-400 leading-relaxed font-medium">-</p>
+                        </div>
+                        <div class="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <h5 class="font-bold text-slate-700 dark:text-slate-300 uppercase text-[9px] tracking-wider mb-2">Model Limitations</h5>
+                            <p id="xai-limitations-desc" class="text-slate-600 dark:text-slate-400 leading-relaxed font-medium">-</p>
+                        </div>
+                        <div class="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <h5 class="font-bold text-slate-700 dark:text-slate-300 uppercase text-[9px] tracking-wider mb-2">Overall Recommendation</h5>
+                            <p id="xai-recommendation-desc" class="text-slate-600 dark:text-slate-400 leading-relaxed font-medium">-</p>
+                        </div>
+                    </div>
+                </details>
+            </div>         </div>
 
             <!-- Sentiment Results Panel -->
             <div id="sentiment-results-panel" class="hidden border-t border-slate-200/60 dark:border-slate-800/60 pt-6 space-y-6 animate-in fade-in duration-300">
@@ -159,9 +283,14 @@
                         <h4 class="text-sm font-semibold text-indigo-500 uppercase tracking-wider text-[11px]">Sentiment Intelligence & Manipulation Analysis</h4>
                         <span id="sentiment-cached-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">Cached</span>
                     </div>
-                    <button onclick="triggerExport('sentiment', 'pdf')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">
-                        📊 Export Sentiment (PDF)
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="triggerExport('sentiment', 'pdf')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">
+                            📊 Export Sentiment (PDF)
+                        </button>
+                        <button onclick="openAddToCaseModal('sentiment', currentSearchId)" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">
+                            📂 Add Sentiment to Case
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Cards Grid -->
@@ -224,9 +353,14 @@
                         <h4 class="text-sm font-semibold text-indigo-500 uppercase tracking-wider text-[11px]">Narrative Evolution & Timeline Analysis</h4>
                         <span id="evolution-cached-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">Cached</span>
                     </div>
-                    <button onclick="triggerExport('evolution', 'pdf')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">
-                        📈 Export Evolution (PDF)
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="triggerExport('evolution', 'pdf')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">
+                            📈 Export Evolution (PDF)
+                        </button>
+                        <button onclick="openAddToCaseModal('evolution', currentSearchId)" class="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">
+                            📂 Add Evolution to Case
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Cards Grid -->
@@ -322,6 +456,8 @@
     let pieChartInstance = null;
     let barChartInstance = null;
     let clusterDoughnutInstance = null;
+    let xaiConfidenceChartInstance = null;
+    let xaiFeaturesChartInstance = null;
 
     function selectPlaceholder(val) {
         document.getElementById('search-input').value = val;
@@ -395,9 +531,20 @@
         // 3. Populate statistics cards
         document.getElementById('stat-articles-collected').innerText = `${data.articles_collected} articles`;
         
-        // Extract unique domains to calculate "Sources Used" count
         const domains = new Set(data.articles.map(a => a.source));
         document.getElementById('stat-sources-used').innerText = `${domains.size} sources`;
+        
+        // Populate Average Trust Rating
+        const avgScore = data.average_source_credibility_score !== undefined ? data.average_source_credibility_score : 70.0;
+        const avgGrade = data.average_source_letter_grade || 'C';
+        document.getElementById('stat-avg-trust').innerText = `${avgGrade} (${avgScore.toFixed(0)}%)`;
+        let trustColor = "text-amber-600 dark:text-amber-450";
+        if (avgGrade === 'A+' || avgGrade === 'A') {
+            trustColor = "text-emerald-600 dark:text-emerald-450";
+        } else if (avgGrade === 'D' || avgGrade === 'F') {
+            trustColor = "text-rose-600 dark:text-rose-450";
+        }
+        document.getElementById('stat-avg-trust').className = `font-bold ${trustColor}`;
         
         document.getElementById('stat-processing-time').innerText = `${data.processing_time}s`;
         
@@ -412,12 +559,25 @@
             data.articles.forEach(art => {
                 const dateStr = art.published_at ? new Date(art.published_at).toLocaleDateString() : 'N/A';
                 
+                const score = art.source_credibility_score !== undefined ? art.source_credibility_score : 70.0;
+                const grade = art.source_letter_grade || 'C';
+                
+                let trustBadgeClass = "bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-450";
+                if (grade === 'A+' || grade === 'A') {
+                    trustBadgeClass = "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-450";
+                } else if (grade === 'D' || grade === 'F') {
+                    trustBadgeClass = "bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-450";
+                }
+                
                 const artEl = document.createElement('div');
                 artEl.className = "p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/25 space-y-2";
                 artEl.innerHTML = `
                     <div class="flex flex-wrap justify-between items-start gap-2">
                         <h5 class="text-xs font-bold text-slate-850 dark:text-slate-200 flex-grow">${escapeHtml(art.title)}</h5>
-                        <span class="text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-medium">${escapeHtml(art.source)}</span>
+                        <div class="flex gap-1.5 items-center flex-shrink-0">
+                            <span class="text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-medium">${escapeHtml(art.source)}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded font-extrabold ${trustBadgeClass}">Trust: ${grade} (${score.toFixed(0)}%)</span>
+                        </div>
                     </div>
                     <div class="flex items-center justify-between text-[10px] text-slate-450 dark:text-slate-500 font-mono">
                         <span>Published: ${dateStr}</span>
@@ -446,12 +606,14 @@
 
         // Hide evolution panel by default on new search results
         document.getElementById('evolution-results-panel').classList.add('hidden');
-
+        document.getElementById('xai-results-panel').classList.add('hidden');
+ 
         // Autoload sentiment if already analyzed, otherwise hide results panel
         if (data.overall_emotion || data.sentiment_analyzed_at) {
             autoLoadSentiment(data.id);
             // Check if evolution is also already generated
             autoLoadEvolution(data.id);
+            autoLoadXAI(data.id);
         } else {
             document.getElementById('sentiment-results-panel').classList.add('hidden');
         }
@@ -1022,6 +1184,221 @@
         });
     }
 
+    function triggerXAI() {
+        if (!currentSearchId) {
+            Toast.show("No active search query available to analyze.", "warning");
+            return;
+        }
+ 
+        const btn = document.getElementById('generate-xai-btn');
+        btn.disabled = true;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-2 h-3.5 w-3.5 text-indigo-650 dark:text-white inline-block" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Analyzing XAI...</span>
+        `;
+ 
+        const token = localStorage.getItem('access_token');
+        fetch('/api/explainability/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ search_id: currentSearchId })
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(err => { throw new Error(err.message || "XAI generation failed."); });
+            }
+            return res.json();
+        })
+        .then(resData => {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            if (resData.success) {
+                renderXAIUI(resData.data);
+                Toast.show("AI explainability generated successfully.", "success");
+            } else {
+                Toast.show(resData.message || "Failed to analyze XAI.", "error");
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            Toast.show(err.message || "An error occurred during XAI analysis.", "error");
+        });
+    }
+ 
+    function renderXAIUI(data) {
+        const panel = document.getElementById('xai-results-panel');
+        panel.classList.remove('hidden');
+ 
+        const fallbackBadge = document.getElementById('xai-fallback-badge');
+        if (data.fallback_used) {
+            fallbackBadge.classList.remove('hidden');
+        } else {
+            fallbackBadge.classList.add('hidden');
+        }
+ 
+        const exp = data.explanation || {};
+        document.getElementById('xai-summary-text').innerText = exp['Executive Summary'] || '-';
+        document.getElementById('xai-model-name').innerText = data.model_name || '-';
+        document.getElementById('xai-model-version').innerText = data.model_version || '-';
+        document.getElementById('xai-vectorizer-version').innerText = data.vectorizer_version || '-';
+        document.getElementById('xai-pipeline-version').innerText = data.pipeline_version || '-';
+        document.getElementById('xai-inference-method').innerText = (data.inference_method || 'model').toUpperCase();
+        document.getElementById('xai-latency').innerText = `${data.processing_time_ms} ms`;
+ 
+        document.getElementById('xai-confidence-label').innerText = `${data.confidence_level}`;
+        document.getElementById('xai-confidence-value').innerText = `${data.confidence.toFixed(1)}% Confidence Score`;
+ 
+        document.getElementById('xai-confidence-desc').innerText = exp['Confidence Explanation'] || '-';
+        document.getElementById('xai-limitations-desc').innerText = exp['Model Limitations'] || '-';
+        document.getElementById('xai-recommendation-desc').innerText = exp['Overall Recommendation'] || '-';
+ 
+        const forList = document.getElementById('xai-evidence-for-list');
+        forList.innerHTML = '';
+        if (data.evidence_for && data.evidence_for.length > 0) {
+            data.evidence_for.forEach(ev => {
+                const card = document.createElement('div');
+                card.className = "p-3 rounded-xl border border-emerald-100 dark:border-emerald-950/30 bg-emerald-50/20 dark:bg-emerald-950/10 space-y-1";
+                card.innerHTML = `
+                    <div class="flex justify-between items-center text-[10px]">
+                        <span class="font-bold text-emerald-700 dark:text-emerald-400">${escapeHtml(ev.source_domain)}</span>
+                        <span class="px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-350 font-bold uppercase text-[8px]">Grade: ${ev.credibility_grade}</span>
+                    </div>
+                    <p class="text-[11px] text-slate-655 dark:text-slate-350 italic">"${escapeHtml(ev.evidence_snippet)}"</p>
+                `;
+                forList.appendChild(card);
+            });
+        } else {
+            forList.innerHTML = '<p class="text-xs text-slate-400 py-1 text-center">No supporting evidence logged.</p>';
+        }
+ 
+        const againstList = document.getElementById('xai-evidence-against-list');
+        againstList.innerHTML = '';
+        if (data.evidence_against && data.evidence_against.length > 0) {
+            data.evidence_against.forEach(ev => {
+                const card = document.createElement('div');
+                card.className = "p-3 rounded-xl border border-rose-100 dark:border-rose-950/30 bg-rose-50/20 dark:bg-rose-950/10 space-y-1";
+                card.innerHTML = `
+                    <div class="flex justify-between items-center text-[10px]">
+                        <span class="font-bold text-rose-700 dark:text-rose-400">${escapeHtml(ev.source_domain)}</span>
+                        <span class="px-1.5 py-0.2 rounded bg-rose-100 dark:bg-rose-900 text-rose-850 dark:text-rose-350 font-bold uppercase text-[8px]">Grade: ${ev.credibility_grade}</span>
+                    </div>
+                    <p class="text-[11px] text-slate-655 dark:text-slate-350 italic">"${escapeHtml(ev.evidence_snippet)}"</p>
+                `;
+                againstList.appendChild(card);
+            });
+        } else {
+            againstList.innerHTML = '<p class="text-xs text-slate-400 py-1 text-center">No contradicting counter-evidence logged.</p>';
+        }
+ 
+        if (xaiConfidenceChartInstance) xaiConfidenceChartInstance.destroy();
+        if (xaiFeaturesChartInstance) xaiFeaturesChartInstance.destroy();
+ 
+        const isDark = document.documentElement.classList.contains('dark');
+        const textLabelColor = isDark ? '#94a3b8' : '#475569';
+ 
+        const gaugeCtx = document.getElementById('xaiConfidenceChart').getContext('2d');
+        xaiConfidenceChartInstance = new Chart(gaugeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Confidence', 'Remaining'],
+                datasets: [{
+                    data: [data.confidence, 100 - data.confidence],
+                    backgroundColor: [
+                        'rgba(99, 102, 241, 0.85)', 
+                        isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                rotation: -90,
+                circumference: 180,
+                cutout: '80%',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                }
+            }
+        });
+ 
+        const featuresCtx = document.getElementById('xaiFeaturesChart').getContext('2d');
+        const features = [...data.feature_importance].sort((a, b) => b.importance - a.importance);
+        const labels = features.map(f => f.feature);
+        const values = features.map(f => f.importance);
+        const barColors = features.map(f => f.direction === 'supports_prediction' 
+            ? 'rgba(16, 185, 129, 0.8)' 
+            : 'rgba(244, 63, 94, 0.8)'
+        );
+        const borderColors = features.map(f => f.direction === 'supports_prediction'
+            ? 'rgb(16, 185, 129)'
+            : 'rgb(244, 63, 94)'
+        );
+ 
+        xaiFeaturesChartInstance = new Chart(featuresCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: barColors,
+                    borderColor: borderColors,
+                    borderWidth: 1.5,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        min: 0,
+                        max: 1.0,
+                        ticks: { color: textLabelColor, font: { family: 'Inter', size: 10 } }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: textLabelColor, font: { family: 'Inter', size: 10, weight: '500' } }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+ 
+    function autoLoadXAI(searchId) {
+        const token = localStorage.getItem('access_token');
+        fetch(`/api/explainability/search/${searchId}`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => {
+            if (res.ok) return res.json();
+            throw new Error("No XAI snap yet.");
+        })
+        .then(resData => {
+            if (resData.success) {
+                renderXAIUI(resData.data);
+            }
+        })
+        .catch(() => {
+            document.getElementById('xai-results-panel').classList.add('hidden');
+        });
+    }
+ 
     function triggerExport(type, format) {
         if (!currentSearchId) {
             Toast.show("No active search query to export.", "warning");
@@ -1033,6 +1410,7 @@
         let url = '/api/export/fact-audit';
         if (type === 'sentiment') url = '/api/export/sentiment';
         if (type === 'evolution') url = '/api/export/evolution';
+        if (type === 'explainability') url = '/api/export/explainability';
         if (type === 'dossier') url = '/api/export/dossier';
 
         fetch(url, {
@@ -1153,5 +1531,117 @@
             loadHistoricalSearch(searchIdParam);
         }
     });
+</script>
+
+<!-- Add To Case Modal -->
+<div id="add-to-case-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" onclick="closeAddToCaseModal()"></div>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-250 dark:border-slate-800 w-full max-w-xs p-5 shadow-xl relative z-10 animate-in zoom-in-95 duration-200 space-y-4">
+        <h3 class="font-display font-semibold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">📁 Link Artifact to Case</h3>
+        <input type="hidden" id="add-case-item-type">
+        <input type="hidden" id="add-case-item-id">
+        <div class="space-y-1.5">
+            <label class="block text-[9px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Select Investigation Case</label>
+            <select id="add-case-select" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/30 text-slate-850 dark:text-slate-200 focus:outline-none">
+                <option value="">Loading cases...</option>
+            </select>
+        </div>
+        <div class="flex items-center justify-end gap-2 text-xs pt-1">
+            <button onclick="closeAddToCaseModal()" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-[10px] font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-premium">Cancel</button>
+            <button onclick="submitAddToCase()" class="px-3 py-1.5 rounded-lg bg-indigo-650 hover:bg-indigo-700 text-white text-[10px] font-semibold shadow-md shadow-indigo-500/10 transition-premium">Link to Case</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openAddToCaseModal(type, id) {
+        if (!id) {
+            Toast.show("No active research query to link.", "warning");
+            return;
+        }
+        document.getElementById('add-case-item-type').value = type;
+        document.getElementById('add-case-item-id').value = id;
+        
+        // Fetch cases
+        const token = localStorage.getItem('access_token');
+        const select = document.getElementById('add-case-select');
+        select.innerHTML = '<option value="">Loading cases...</option>';
+        
+        fetch('/api/cases', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(resData => {
+            if (resData.success) {
+                const cases = resData.data.cases || [];
+                // Filter out ARCHIVED cases
+                const activeCases = cases.filter(c => c.status !== 'ARCHIVED');
+                
+                if (activeCases.length === 0) {
+                    select.innerHTML = '<option value="">No active cases. Create one first.</option>';
+                    return;
+                }
+                
+                select.innerHTML = '';
+                activeCases.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.innerText = `${c.title} (${c.priority})`;
+                    select.appendChild(opt);
+                });
+            } else {
+                select.innerHTML = '<option value="">Failed to load cases.</option>';
+            }
+        })
+        .catch(() => {
+            select.innerHTML = '<option value="">Error fetching cases.</option>';
+        });
+
+        document.getElementById('add-to-case-modal').classList.remove('hidden');
+    }
+
+    function closeAddToCaseModal() {
+        document.getElementById('add-to-case-modal').classList.add('hidden');
+    }
+
+    function submitAddToCase() {
+        const token = localStorage.getItem('access_token');
+        const caseId = document.getElementById('add-case-select').value;
+        const type = document.getElementById('add-case-item-type').value;
+        const id = document.getElementById('add-case-item-id').value;
+
+        if (!caseId) {
+            Toast.show("Please select an active case.", "warning");
+            return;
+        }
+
+        Loader.show();
+        fetch(`/api/cases/${caseId}/items`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                item_type: type,
+                item_id: parseInt(id)
+            })
+        })
+        .then(res => res.json())
+        .then(resData => {
+            Loader.hide();
+            closeAddToCaseModal();
+            if (resData.success) {
+                Toast.show("Linked to case successfully.", "success");
+            } else {
+                Toast.show(resData.message, "error");
+            }
+        })
+        .catch(() => {
+            Loader.hide();
+            closeAddToCaseModal();
+            Toast.show("Failed to link item to case.", "error");
+        });
+    }
 </script>
 {% endblock %}

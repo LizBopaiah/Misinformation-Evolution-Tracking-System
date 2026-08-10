@@ -228,6 +228,42 @@ def export_dossier():
         current_app.logger.error(f"Failed to compile dossier export: {str(e)}", exc_info=True)
         return make_error_response(f"Export failed: {str(e)}", 500)
 
+@export_bp.route('/explainability', methods=['POST'])
+@jwt_required()
+def export_explainability():
+    """Generates explainability export snapshot"""
+    user_id = int(get_jwt_identity())
+    
+    if not request.is_json:
+        return make_error_response("Content-Type must be application/json.", 400)
+        
+    data = request.get_json()
+    search_id = data.get('search_id')
+    export_format = data.get('format', 'pdf').lower()
+
+    if not search_id:
+        return make_error_response("search_id field is required.", 400)
+    if export_format not in ('pdf', 'json', 'html'):
+        return make_error_response("Unsupported format. Use 'pdf', 'json', or 'html'.", 400)
+
+    # Ownership check
+    search = db.session.query(SearchHistory).filter_by(id=search_id, user_id=user_id).first()
+    if not search:
+        return make_error_response("Search record not found or access denied.", 404)
+
+    # Check rate limit
+    allowed, msg = check_rate_limits(user_id, 'explainability', 'search', search_id, export_format)
+    if not allowed:
+        return make_error_response(msg, 429)
+
+    try:
+        svc = ExportService()
+        record = svc.get_or_create_export(user_id, 'explainability', 'search', search_id, export_format)
+        return make_success_response(data=record.to_dict(), message="Explainability export compiled successfully.")
+    except Exception as e:
+        current_app.logger.error(f"Failed to compile explainability export: {str(e)}", exc_info=True)
+        return make_error_response(f"Export failed: {str(e)}", 500)
+
 @export_bp.route('/<int:export_id>', methods=['GET'])
 @jwt_required()
 def download_export(export_id):

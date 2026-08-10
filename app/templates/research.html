@@ -95,8 +95,11 @@
                             <button id="export-html-btn" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">
                                 🌐 Export HTML
                             </button>
-                            <button id="export-pdf-btn" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center gap-1 transition-premium">
+                            <button id="export-pdf-btn" class="px-3 py-1.5 rounded-lg bg-indigo-650 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center gap-1 transition-premium mr-1">
                                 🖨️ Export PDF
+                            </button>
+                            <button id="add-report-to-case-btn" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">
+                                📂 Add to Case
                             </button>
                         </div>
                     </div>
@@ -169,6 +172,55 @@
                                 <!-- Populated dynamically -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- Comparison Explainability / XAI -->
+                <div class="p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-sm font-semibold text-indigo-500 uppercase tracking-wider text-[11px]">AI Explainability & Report Verification Audit</h4>
+                        <span id="comp-xai-fallback-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-amber-550/20 text-amber-600 font-bold uppercase tracking-wider">Local Fallback</span>
+                    </div>
+
+                    <!-- Executive Summary narrative -->
+                    <div class="space-y-2">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">XAI Comparison Summary</span>
+                        <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/20 dark:bg-slate-950/10">
+                            <p id="comp-xai-summary-text" class="text-xs text-slate-655 dark:text-slate-350 leading-relaxed font-medium">-</p>
+                        </div>
+                    </div>
+
+                    <!-- Governance Metadata details -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider block">Decision Weights & Features</span>
+                            <div class="space-y-2 text-xs">
+                                <div class="flex justify-between items-center py-1 border-b border-slate-100/50 dark:border-slate-850/50">
+                                    <span class="text-slate-450">Decision Engine:</span>
+                                    <span id="comp-xai-model-name" class="font-semibold text-slate-700 dark:text-slate-300">-</span>
+                                </div>
+                                <div class="flex justify-between items-center py-1 border-b border-slate-100/50 dark:border-slate-850/50">
+                                    <span class="text-slate-450">Model Version:</span>
+                                    <span id="comp-xai-model-version" class="font-semibold text-slate-700 dark:text-slate-300">-</span>
+                                </div>
+                                <div class="flex justify-between items-center py-1 border-b border-slate-100/50 dark:border-slate-850/50">
+                                    <span class="text-slate-450">Feature Target:</span>
+                                    <span id="comp-xai-feature" class="font-bold text-slate-700 dark:text-slate-300">-</span>
+                                </div>
+                                <div class="flex justify-between items-center py-1">
+                                    <span class="text-slate-450">Process Time:</span>
+                                    <span id="comp-xai-latency" class="font-semibold text-slate-750 dark:text-slate-250">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider block">Guidance & Limitations</span>
+                            <div class="p-3.5 bg-slate-50 dark:bg-slate-950/20 rounded-xl space-y-2 text-[11px]">
+                                <div><b>Model Limitations:</b> <span id="comp-xai-limitations">-</span></div>
+                                <div class="pt-1.5 border-t border-slate-100/50 dark:border-slate-850/50"><b>Recommendation:</b> <span id="comp-xai-recommendation">-</span></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -332,6 +384,12 @@
         document.getElementById('export-pdf-btn').onclick = () => {
             triggerCompareExport(data.id, 'pdf');
         };
+        document.getElementById('add-report-to-case-btn').onclick = () => {
+            openAddToCaseModal('comparison', data.id);
+        };
+
+        // Fetch and render comparison XAI details
+        fetchCompReportXAI(data.id);
 
         // Populate similarity heat table
         const tableBody = document.getElementById('shared-narratives-table-body');
@@ -590,6 +648,49 @@
         });
     }
 
+    function fetchCompReportXAI(reportId) {
+        const token = localStorage.getItem('access_token');
+        fetch(`/api/explainability/report/${reportId}`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => {
+            if (res.ok) return res.json();
+            throw new Error("No XAI snap yet.");
+        })
+        .then(resData => {
+            if (resData.success) {
+                const xai = resData.data;
+                const exp = xai.explanation || {};
+                
+                const fallbackBadge = document.getElementById('comp-xai-fallback-badge');
+                if (xai.fallback_used) {
+                    fallbackBadge.classList.remove('hidden');
+                } else {
+                    fallbackBadge.classList.add('hidden');
+                }
+
+                document.getElementById('comp-xai-summary-text').innerText = exp['Executive Summary'] || '-';
+                document.getElementById('comp-xai-model-name').innerText = xai.model_name || '-';
+                document.getElementById('comp-xai-model-version').innerText = xai.model_version || '-';
+                document.getElementById('comp-xai-latency').innerText = `${xai.processing_time_ms} ms`;
+                
+                if (xai.feature_importance && xai.feature_importance.length > 0) {
+                    const fi = xai.feature_importance[0];
+                    document.getElementById('comp-xai-feature').innerText = `${fi.feature} (${fi.importance.toFixed(2)})`;
+                } else {
+                    document.getElementById('comp-xai-feature').innerText = '-';
+                }
+
+                document.getElementById('comp-xai-limitations').innerText = exp['Model Limitations'] || '-';
+                document.getElementById('comp-xai-recommendation').innerText = exp['Overall Recommendation'] || '-';
+            }
+        })
+        .catch(() => {
+            // Keep placeholders on error/missing XAI
+        });
+    }
+
     function escapeHtml(str) {
         if (!str) return '';
         return str
@@ -598,6 +699,117 @@
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+</script>
+
+<!-- Add To Case Modal -->
+<div id="add-to-case-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" onclick="closeAddToCaseModal()"></div>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-250 dark:border-slate-800 w-full max-w-xs p-5 shadow-xl relative z-10 animate-in zoom-in-95 duration-200 space-y-4">
+        <h3 class="font-display font-semibold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">📁 Link Artifact to Case</h3>
+        <input type="hidden" id="add-case-item-type">
+        <input type="hidden" id="add-case-item-id">
+        <div class="space-y-1.5">
+            <label class="block text-[9px] font-bold text-slate-400 dark:text-slate-555 uppercase tracking-wider">Select Investigation Case</label>
+            <select id="add-case-select" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/30 text-slate-850 dark:text-slate-200 focus:outline-none">
+                <option value="">Loading cases...</option>
+            </select>
+        </div>
+        <div class="flex items-center justify-end gap-2 text-xs pt-1">
+            <button onclick="closeAddToCaseModal()" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-[10px] font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-premium">Cancel</button>
+            <button onclick="submitAddToCase()" class="px-3 py-1.5 rounded-lg bg-indigo-650 hover:bg-indigo-700 text-white text-[10px] font-semibold shadow-md shadow-indigo-500/10 transition-premium">Link to Case</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openAddToCaseModal(type, id) {
+        if (!id) {
+            Toast.show("No active comparison report to link.", "warning");
+            return;
+        }
+        document.getElementById('add-case-item-type').value = type;
+        document.getElementById('add-case-item-id').value = id;
+        
+        // Fetch cases
+        const token = localStorage.getItem('access_token');
+        const select = document.getElementById('add-case-select');
+        select.innerHTML = '<option value="">Loading cases...</option>';
+        
+        fetch('/api/cases', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(resData => {
+            if (resData.success) {
+                const cases = resData.data.cases || [];
+                const activeCases = cases.filter(c => c.status !== 'ARCHIVED');
+                
+                if (activeCases.length === 0) {
+                    select.innerHTML = '<option value="">No active cases. Create one first.</option>';
+                    return;
+                }
+                
+                select.innerHTML = '';
+                activeCases.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.innerText = `${c.title} (${c.priority})`;
+                    select.appendChild(opt);
+                });
+            } else {
+                select.innerHTML = '<option value="">Failed to load cases.</option>';
+            }
+        })
+        .catch(() => {
+            select.innerHTML = '<option value="">Error fetching cases.</option>';
+        });
+
+        document.getElementById('add-to-case-modal').classList.remove('hidden');
+    }
+
+    function closeAddToCaseModal() {
+        document.getElementById('add-to-case-modal').classList.add('hidden');
+    }
+
+    function submitAddToCase() {
+        const token = localStorage.getItem('access_token');
+        const caseId = document.getElementById('add-case-select').value;
+        const type = document.getElementById('add-case-item-type').value;
+        const id = document.getElementById('add-case-item-id').value;
+
+        if (!caseId) {
+            Toast.show("Please select an active case.", "warning");
+            return;
+        }
+
+        Loader.show();
+        fetch(`/api/cases/${caseId}/items`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                item_type: type,
+                item_id: parseInt(id)
+            })
+        })
+        .then(res => res.json())
+        .then(resData => {
+            Loader.hide();
+            closeAddToCaseModal();
+            if (resData.success) {
+                Toast.show("Linked to case successfully.", "success");
+            } else {
+                Toast.show(resData.message, "error");
+            }
+        })
+        .catch(() => {
+            Loader.hide();
+            closeAddToCaseModal();
+            Toast.show("Failed to link item to case.", "error");
+        });
     }
 </script>
 {% endblock %}

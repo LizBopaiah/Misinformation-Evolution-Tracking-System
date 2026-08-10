@@ -195,6 +195,28 @@ def run_search():
         # Commit articles to make sure ids are generated
         db.session.commit()
 
+        # 6b. Automatically trigger source credibility calculations
+        from app.services.credibility_service import CredibilityService
+        from app.models.credibility import SourceCredibility
+        cred_svc = CredibilityService()
+        
+        articles_data = []
+        credibility_scores = []
+        for a in articles_saved:
+            normalized_domain = cred_svc.normalize_domain(a.url)
+            cred = cred_svc.calculate_credibility(normalized_domain, articles=final_articles)
+            
+            a_dict = a.to_dict()
+            a_dict['source_credibility_score'] = cred.get('credibility_score', 70.0)
+            a_dict['source_letter_grade'] = cred.get('letter_grade', 'C')
+            articles_data.append(a_dict)
+            
+            if cred.get('credibility_score') is not None:
+                credibility_scores.append(cred['credibility_score'])
+
+        avg_score = round(sum(credibility_scores) / len(credibility_scores), 2) if credibility_scores else 70.0
+        avg_grade = cred_svc.get_letter_grade(avg_score)
+
         # 7. Generate narrative summary
         summarization_svc = SummarizationService()
         summary = summarization_svc.generate_summary(final_articles)
@@ -225,7 +247,9 @@ def run_search():
                 "processing_time": search_log.processing_time,
                 "search_status": search_log.search_status,
                 "created_at": search_log.created_at.isoformat() if search_log.created_at else None,
-                "articles": [a.to_dict() for a in articles_saved]
+                "average_source_credibility_score": avg_score,
+                "average_source_letter_grade": avg_grade,
+                "articles": articles_data
             },
             message="Search analysis completed successfully."
         )
@@ -258,6 +282,32 @@ def get_search_details(search_id):
     # Get associated articles
     articles = Article.query.filter_by(search_id=search_id).all()
     
+    from app.services.credibility_service import CredibilityService
+    from app.models.credibility import SourceCredibility
+    cred_svc = CredibilityService()
+    
+    articles_data = []
+    credibility_scores = []
+    for a in articles:
+        normalized_domain = cred_svc.normalize_domain(a.url)
+        cred = SourceCredibility.query.filter_by(domain=normalized_domain).first()
+        if not cred:
+            cred = cred_svc.calculate_credibility(normalized_domain)
+            cred_score = cred.get('credibility_score', 70.0)
+            cred_grade = cred.get('letter_grade', 'C')
+        else:
+            cred_score = cred.credibility_score
+            cred_grade = cred.letter_grade
+            
+        a_dict = a.to_dict()
+        a_dict['source_credibility_score'] = cred_score
+        a_dict['source_letter_grade'] = cred_grade
+        articles_data.append(a_dict)
+        credibility_scores.append(cred_score)
+        
+    avg_score = round(sum(credibility_scores) / len(credibility_scores), 2) if credibility_scores else 70.0
+    avg_grade = cred_svc.get_letter_grade(avg_score)
+    
     return make_success_response(
         data={
             "id": search.id,
@@ -268,7 +318,9 @@ def get_search_details(search_id):
             "processing_time": search.processing_time,
             "search_status": search.search_status,
             "created_at": search.created_at.isoformat() if search.created_at else None,
-            "articles": [a.to_dict() for a in articles]
+            "average_source_credibility_score": avg_score,
+            "average_source_letter_grade": avg_grade,
+            "articles": articles_data
         },
         message="Search details retrieved successfully."
     )
@@ -286,8 +338,26 @@ def get_article_details(article_id):
     if article.user_id != user_id:
         return make_error_response("You do not have permission to view this article.", 403)
         
+    a_dict = article.to_dict()
+    
+    from app.services.credibility_service import CredibilityService
+    from app.models.credibility import SourceCredibility
+    cred_svc = CredibilityService()
+    normalized_domain = cred_svc.normalize_domain(article.url)
+    cred = SourceCredibility.query.filter_by(domain=normalized_domain).first()
+    if not cred:
+        cred = cred_svc.calculate_credibility(normalized_domain)
+        cred_score = cred.get('credibility_score', 70.0)
+        cred_grade = cred.get('letter_grade', 'C')
+    else:
+        cred_score = cred.credibility_score
+        cred_grade = cred.letter_grade
+        
+    a_dict['source_credibility_score'] = cred_score
+    a_dict['source_letter_grade'] = cred_grade
+    
     return make_success_response(
-        data=article.to_dict(),
+        data=a_dict,
         message="Article details retrieved successfully."
     )
 

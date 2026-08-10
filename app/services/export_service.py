@@ -189,6 +189,16 @@ class ExportService:
                     "published_at": art.published_at.isoformat() if art.published_at else None
                 }
                 
+                # Fetch credibility details
+                from app.models.credibility import SourceCredibility
+                cred = db.session.query(SourceCredibility).filter_by(domain=art.source).first()
+                if cred:
+                    art_dict["source_credibility_score"] = cred.credibility_score
+                    art_dict["source_letter_grade"] = cred.letter_grade
+                else:
+                    art_dict["source_credibility_score"] = 70.0
+                    art_dict["source_letter_grade"] = "C"
+                
                 # Fetch fact audit if fact_audit type or dossier
                 if export_type in ('fact_audit', 'dossier'):
                     fa = db.session.query(FactCheckResult).filter_by(article_id=art.id).first()
@@ -206,6 +216,19 @@ class ExportService:
                 evo = db.session.query(EvolutionResult).filter_by(search_id=source_id).first()
                 data["evolution"] = evo.to_dict() if evo else None
 
+            # Fetch explainability snapshot
+            from app.models.explainability import ExplainabilityResult
+            xai = db.session.query(ExplainabilityResult).filter_by(search_id=source_id, explanation_type='search').first()
+            if xai:
+                data["explainability"] = xai.to_dict()
+            else:
+                try:
+                    from app.services.explainability_service import ExplainabilityService
+                    svc = ExplainabilityService()
+                    data["explainability"] = svc.generate_search_explainability(source_id)
+                except Exception:
+                    data["explainability"] = None
+
         elif source_type == 'report':
             report = db.session.get(ResearchReport, source_id)
             if not report:
@@ -220,8 +243,20 @@ class ExportService:
             for sid in report.search_ids:
                 search_obj = db.session.get(SearchHistory, sid)
                 if search_obj:
-                    # Basic query details
                     data["search_profiles"].append(search_obj.to_dict())
+
+            # Fetch explainability snapshot for report
+            from app.models.explainability import ExplainabilityResult
+            xai = db.session.query(ExplainabilityResult).filter_by(search_id=None, article_id=source_id, explanation_type='report').first()
+            if xai:
+                data["explainability"] = xai.to_dict()
+            else:
+                try:
+                    from app.services.explainability_service import ExplainabilityService
+                    svc = ExplainabilityService()
+                    data["explainability"] = svc.generate_report_explainability(source_id)
+                except Exception:
+                    data["explainability"] = None
 
         return data
 
@@ -299,11 +334,23 @@ class ExportService:
                     s = art["sentiment"]
                     emotion_tag = f"<span class='text-[10px] bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full font-bold ml-2'>{s['dominant_emotion']} ({s['risk_level']} Risk)</span>"
 
+                cred_badge = ""
+                if "source_credibility_score" in art:
+                    score = art["source_credibility_score"]
+                    grade = art.get("source_letter_grade", "C")
+                    if grade in ('A+', 'A'):
+                        bg_color = 'bg-emerald-50 text-emerald-600'
+                    elif grade in ('B', 'C'):
+                        bg_color = 'bg-amber-50 text-amber-600'
+                    else:
+                        bg_color = 'bg-rose-50 text-rose-600'
+                    cred_badge = f"<span class='text-[10px] {bg_color} px-2 py-0.5 rounded-full font-bold ml-2'>Trust: {grade} ({score:.0f}%)</span>"
+
                 body_content += f"""
                 <div class="border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
-                    <h3 class="text-sm font-bold text-slate-800">{art['title']}{fact_verdict}{emotion_tag}</h3>
+                    <h3 class="text-sm font-bold text-slate-800">{art['title']}{fact_verdict}{emotion_tag}{cred_badge}</h3>
                     <p class="text-[10px] text-slate-400 font-mono mt-1">Source: {art['source']} | Published: {art['published_at'] or 'Unknown'}</p>
-                    <p class="text-xs text-slate-600 mt-2 line-clamp-3">{art['content'][:400]}...</p>
+                    <p class="text-xs text-slate-650 mt-2 line-clamp-3">{art['content'][:400]}...</p>
                 </div>
                 """
             body_content += "</div></div>"
@@ -341,7 +388,65 @@ class ExportService:
                 </div>
             </div>
             """
+        if "explainability" in data and data["explainability"]:
+            xai = data["explainability"]
+            exp = xai.get("explanation", {})
+            
+            features_html = ""
+            for fi in xai.get("feature_importance", []):
+                bg_c = '#ecfdf5' if fi['direction']=='supports_prediction' else '#fef2f2'
+                fg_c = '#065f46' if fi['direction']=='supports_prediction' else '#991b1b'
+                features_html += f"""
+                <span style="background-color: {bg_c}; color: {fg_c}; display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px; margin-bottom: 4px; font-weight: bold;">
+                    {fi['feature']}: {fi['importance']:.2f}
+                </span>
+                """
+                
+            evidence_html = ""
+            for ev in xai.get("evidence_for", []):
+                evidence_html += f"<li><b>{ev['source_domain']}</b>: {ev['evidence_snippet']} (Grade: {ev['credibility_grade']})</li>"
+            for ev in xai.get("evidence_against", []):
+                evidence_html += f"<li><b>{ev['source_domain']}</b> (Counter): {ev['evidence_snippet']} (Grade: {ev['credibility_grade']})</li>"
+                
+            body_content += f"""
+            <div class="card bg-white p-6 rounded-2xl border border-slate-100 mb-6">
+                <h2 class="text-lg font-bold text-slate-800 mb-2">AI Explainability & Model Governance</h2>
+                <table class="w-full text-sm mb-4">
+                    <tr><td class="font-semibold text-slate-500 py-1" style="width: 30%;">Confidence Level:</td><td class="text-indigo-650 font-extrabold py-1">{xai['confidence_level']} ({xai['confidence']:.1f}%)</td></tr>
+                    <tr><td class="font-semibold text-slate-500 py-1">Model Name / Version:</td><td class="text-slate-800 py-1">{xai['model_name']} ({xai['model_version']})</td></tr>
+                    <tr><td class="font-semibold text-slate-500 py-1">Vectorizer Version:</td><td class="text-slate-800 py-1">{xai['vectorizer_version']}</td></tr>
+                    <tr><td class="font-semibold text-slate-500 py-1">Pipeline Version:</td><td class="text-slate-800 py-1">{xai['pipeline_version']}</td></tr>
+                    <tr><td class="font-semibold text-slate-500 py-1">Inference Method:</td><td class="text-slate-800 py-1">{xai['inference_method'].upper()} (Fallback: {str(xai['fallback_used']).upper()})</td></tr>
+                    <tr><td class="font-semibold text-slate-500 py-1">Processing Time:</td><td class="text-slate-800 py-1">{xai['processing_time_ms']} ms</td></tr>
+                </table>
+                
+                <div style="margin-bottom: 12px; padding: 12px; background-color: #f8fafc; border-radius: 8px;">
+                    <h3 style="font-size: 11px; font-weight: bold; color: #475569; margin: 0 0 6px 0; text-transform: uppercase;">Executive Summary</h3>
+                    <p style="font-size: 12px; margin: 0; color: #334155; line-height: 1.4;">{exp.get('Executive Summary', 'N/A')}</p>
+                </div>
+                
+                <div style="margin-bottom: 12px; padding: 12px; background-color: #f8fafc; border-radius: 8px;">
+                    <h3 style="font-size: 11px; font-weight: bold; color: #475569; margin: 0 0 6px 0; text-transform: uppercase;">Evidence Corroboration</h3>
+                    <ul style="font-size: 12px; margin: 0; padding-left: 16px; color: #334155; line-height: 1.4;">
+                        {evidence_html or '<li>No detailed evidence segments cached.</li>'}
+                    </ul>
+                </div>
 
+                <div style="margin-bottom: 12px; padding: 12px; background-color: #f8fafc; border-radius: 8px;">
+                    <h3 style="font-size: 11px; font-weight: bold; color: #475569; margin: 0 0 6px 0; text-transform: uppercase;">Feature Importance Weights</h3>
+                    <div style="margin-top: 5px;">
+                        {features_html or '<span>No features importance scores calculated.</span>'}
+                    </div>
+                </div>
+
+                <div style="padding: 12px; background-color: #f8fafc; border-radius: 8px;">
+                    <h3 style="font-size: 11px; font-weight: bold; color: #475569; margin: 0 0 6px 0; text-transform: uppercase;">Confidence Explanation & Limitations</h3>
+                    <p style="font-size: 12px; margin: 0 0 6px 0; color: #334155;"><b>Confidence Details:</b> {exp.get('Confidence Explanation', 'N/A')}</p>
+                    <p style="font-size: 12px; margin: 0 0 6px 0; color: #334155;"><b>Model Limitations:</b> {exp.get('Model Limitations', 'N/A')}</p>
+                    <p style="font-size: 12px; margin: 0; color: #334155;"><b>Overall Recommendation:</b> {exp.get('Overall Recommendation', 'N/A')}</p>
+                </div>
+            </div>
+            """
         html = f"""<!DOCTYPE html>
         <html>
         <head>
@@ -541,7 +646,9 @@ class ExportService:
                 art_elements = []
                 art_elements.append(Paragraph(f"Article {idx+1}: {art['title']}", styles['SubSecHeading']))
                 
-                meta_str = f"<b>Source:</b> {art['source']} | <b>Published:</b> {art['published_at'] or 'Unknown'}"
+                cred_score = art.get("source_credibility_score", 70.0)
+                cred_grade = art.get("source_letter_grade", "C")
+                meta_str = f"<b>Source:</b> {art['source']} (Trust: {cred_grade}, {cred_score:.1f}%) | <b>Published:</b> {art['published_at'] or 'Unknown'}"
                 art_elements.append(Paragraph(meta_str, styles['Normal']))
                 
                 # Check for fact audit
@@ -620,18 +727,88 @@ class ExportService:
                     story.append(Paragraph(claim_str, styles['Normal']))
                     story.append(Spacer(1, 4))
 
+        # Section 6.5: Explainability & Model Governance
+        if "explainability" in data and data["explainability"]:
+            xai = data["explainability"]
+            exp = xai.get("explanation", {})
+            story.append(Spacer(1, 15))
+            story.append(Paragraph("5. AI Explainability & Model Governance", styles['SecHeading']))
+            
+            xai_meta = [
+                [Paragraph("<b>Prediction:</b>", styles['Normal']), Paragraph(str(xai.get('prediction', 'N/A')), styles['Normal'])],
+                [Paragraph("<b>Confidence Level:</b>", styles['Normal']), Paragraph(f"{xai.get('confidence_level', 'N/A')} ({xai.get('confidence', 0.0):.1f}%)", styles['Normal'])],
+                [Paragraph("<b>Model Reference:</b>", styles['Normal']), Paragraph(f"{xai.get('model_name')} ({xai.get('model_version')})", styles['Normal'])],
+                [Paragraph("<b>Pipeline Versions:</b>", styles['Normal']), Paragraph(f"Vectorizer: {xai.get('vectorizer_version')} | Pipeline: {xai.get('pipeline_version')}", styles['Normal'])],
+                [Paragraph("<b>Inference Pipeline:</b>", styles['Normal']), Paragraph(f"Method: {xai.get('inference_method')} (Fallback Used: {str(xai.get('fallback_used')).upper()})", styles['Normal'])],
+                [Paragraph("<b>Processing Latency:</b>", styles['Normal']), Paragraph(f"{xai.get('processing_time_ms')} ms", styles['Normal'])],
+            ]
+            xai_meta_table = Table(xai_meta, colWidths=[150, 354])
+            xai_meta_table.setStyle(TableStyle([
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+                ('TOPPADDING', (0,0), (-1,-1), 6),
+                ('LINEBELOW', (0,0), (-1,-1), 0.5, colors.HexColor("#f1f5f9")),
+            ]))
+            story.append(xai_meta_table)
+            story.append(Spacer(1, 12))
+
+            story.append(Paragraph("<b>Executive Summary:</b>", styles['Normal']))
+            story.append(Paragraph(exp.get('Executive Summary', 'N/A'), styles['SummaryText']))
+            story.append(Spacer(1, 10))
+
+            # Evidence lists formatting
+            evidence_text = ""
+            for ev in xai.get("evidence_for", []):
+                evidence_text += f"• <b>{ev['source_domain']}</b>: {ev['evidence_snippet']} (Grade: {ev['credibility_grade']})<br/>"
+            for ev in xai.get("evidence_against", []):
+                evidence_text += f"• <b>{ev['source_domain']}</b> (Counter): {ev['evidence_snippet']} (Grade: {ev['credibility_grade']})<br/>"
+                
+            story.append(Paragraph("<b>Evidence Corroboration:</b>", styles['Normal']))
+            story.append(Paragraph(evidence_text or "No detailed evidence segments loaded.", styles['Normal']))
+            story.append(Spacer(1, 10))
+
+            # Feature Importance table
+            story.append(Paragraph("<b>Feature Importance Weights:</b>", styles['SubSecHeading']))
+            fi_data = [["Feature", "Score", "Direction", "Description"]]
+            for fi in xai.get("feature_importance", []):
+                fi_data.append([
+                    Paragraph(fi["feature"], styles['Normal']),
+                    Paragraph(f"{fi['importance']:.2f}", styles['Normal']),
+                    Paragraph(fi["direction"], styles['Normal']),
+                    Paragraph(fi["description"], styles['Normal'])
+                ])
+            fi_table = Table(fi_data, colWidths=[120, 50, 110, 224])
+            fi_table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+                ('TOPPADDING', (0,0), (-1,-1), 5),
+            ]))
+            story.append(fi_table)
+            story.append(Spacer(1, 12))
+
+            story.append(Paragraph("<b>Model Confidence & Limitations:</b>", styles['SubSecHeading']))
+            story.append(Paragraph(f"<b>Confidence explanation:</b> {exp.get('Confidence Explanation', 'N/A')}", styles['Normal']))
+            story.append(Spacer(1, 4))
+            story.append(Paragraph(f"<b>Model limitations:</b> {exp.get('Model Limitations', 'N/A')}", styles['Normal']))
+            story.append(Spacer(1, 4))
+            story.append(Paragraph(f"<b>Overall Recommendation:</b> {exp.get('Overall Recommendation', 'N/A')}", styles['Normal']))
+
         # Section 7: Supporting Evidence Sources
         if "articles" in data and data["articles"]:
             story.append(Spacer(1, 15))
-            story.append(Paragraph("6. References & Evidence URL Archives", styles['SecHeading']))
-            ref_data = [["Title", "Source Domain", "URL"]]
+            story.append(Paragraph("6. References & Evidence URL Archives (Credibility Audit)", styles['SecHeading']))
+            ref_data = [["Title", "Source Domain", "Trust", "Score", "URL"]]
             for art in data["articles"]:
                 ref_data.append([
-                    Paragraph(art['title'][:40]+"...", styles['Normal']),
+                    Paragraph(art['title'][:32]+"...", styles['Normal']),
                     Paragraph(art['source'], styles['Normal']),
-                    Paragraph(art['url'], styles['Normal'])
+                    Paragraph(art.get('source_letter_grade', 'C'), styles['Normal']),
+                    Paragraph(f"{art.get('source_credibility_score', 70.0):.1f}%", styles['Normal']),
+                    Paragraph(art['url'][:30]+"...", styles['Normal'])
                 ])
-            ref_table = Table(ref_data, colWidths=[180, 100, 224])
+            ref_table = Table(ref_data, colWidths=[120, 80, 50, 50, 204])
             ref_table.setStyle(TableStyle([
                 ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
                 ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),

@@ -87,6 +87,9 @@ def register_blueprints(app):
     from app.blueprints.evolution import evolution_bp
     from app.blueprints.research import research_bp
     from app.blueprints.export import export_bp
+    from app.blueprints.case import case_bp
+    from app.blueprints.credibility import credibility_bp
+    from app.blueprints.explainability import explainability_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(user_bp)
@@ -100,7 +103,9 @@ def register_blueprints(app):
     app.register_blueprint(evolution_bp)
     app.register_blueprint(research_bp)
     app.register_blueprint(export_bp)
-
+    app.register_blueprint(case_bp)
+    app.register_blueprint(credibility_bp)
+    app.register_blueprint(explainability_bp)
 
 def register_error_handlers(app):
     """Registers global handlers for HTTP error codes to return structured JSON payloads"""

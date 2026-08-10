@@ -254,8 +254,41 @@ class ResearchIntelligenceService:
 
         avg_veracity_sim = float(np.mean(veracity_matches)) if veracity_matches else 0.0
 
+        # 4. Source Credibility similarity
+        from app.services.credibility_service import CredibilityService
+        from app.models.credibility import SourceCredibility
+        cred_svc = CredibilityService()
+        
+        avg_credibilities = []
+        for sid in search_ids:
+            articles = db.session.query(Article).filter_by(search_id=sid).all()
+            scores = []
+            for a in articles:
+                normalized_domain = cred_svc.normalize_domain(a.url)
+                cred = SourceCredibility.query.filter_by(domain=normalized_domain).first()
+                if cred:
+                    scores.append(cred.credibility_score)
+                else:
+                    scores.append(70.0)
+            avg_cred = sum(scores) / len(scores) if scores else 70.0
+            avg_credibilities.append(avg_cred)
+            
+        credibility_sims = []
+        for i in range(n_searches):
+            for j in range(i + 1, n_searches):
+                diff = abs(avg_credibilities[i] - avg_credibilities[j])
+                sim = 1.0 - (diff / 100.0)
+                credibility_sims.append(sim)
+                
+        avg_credibility_sim = float(np.mean(credibility_sims)) if credibility_sims else 1.0
+
         # Combine weighted metrics (0-100 scale)
-        overall_score = (avg_text_sim * 0.50 + avg_emotion_sim * 0.30 + avg_veracity_sim * 0.20) * 100.0
+        overall_score = (
+            avg_text_sim * 0.40 + 
+            avg_emotion_sim * 0.25 + 
+            avg_veracity_sim * 0.20 + 
+            avg_credibility_sim * 0.15
+        ) * 100.0
         return max(0.0, min(100.0, float(overall_score)))
 
     def generate_comparative_report(self, search_ids, user_id, report_name):

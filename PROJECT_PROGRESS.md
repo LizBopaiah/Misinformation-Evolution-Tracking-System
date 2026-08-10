@@ -304,7 +304,19 @@ MET/
 8. **Cascade Protection (SET NULL)**: Uses nullable foreign key references to keep completed exports available as historical evidence even after parent searches or reports are deleted.
 9. **Dossier Management Interface**: Added an elegant `/exports` center template where users can filter files by search query/type, monitor disk usage stats, check daily rate limit counters, and delete or download exports.
 10. **Interactive Export Action Triggers**: Integrated export controls directly into the Fact Audit, Sentiment Analysis, Narrative Evolution, and Comparative Analytics panels.
-11. **Automated Integration Suite**: Created `scripts/verify_exports.py` testing auth guards, rate limiting, dossier size limits, cascade set null, recovery from snapshots, and corrupted file download blocks. All tests passing cleanly.
+* **Automated Integration Suite**: Created `scripts/verify_exports.py` testing auth guards, rate limiting, dossier size limits, cascade set null, recovery from snapshots, and corrupted file download blocks. All tests passing cleanly.
 
+---
 
+## 🚀 Module 8 – Investigation Workspace & Case Management (Status: COMPLETED ✅)
 
+### Implemented Features
+1. **New Case Database Models**: Created `InvestigationCase` (container metadata), `CaseItem` (junction mapping with de-normalized snapshot fields), and `CaseActivity` (audit timeline logging) models in `app/models/case.py`. Registered them in `app/models/__init__.py`.
+2. **Robust CaseService Layer**: Implemented full CRUD lifecycle controls, item mapping validations, statistics, timeline progressions, and pagination in `app/services/case_service.py`.
+3. **Granular Security Boundaries**: Enforces strict authentication and ownership isolation checks (returning HTTP 404 for unauthenticated case details access and HTTP 403 for unauthorized linking of cross-user items).
+4. **Archive Write Protection**: Locks cases marked as `'ARCHIVED'` from any future metadata adjustments or artifact linkages (HTTP 400).
+5. **Dashboard Pagination**: Added query parameters `page` and `page_size` (capping at max 100) to support large investigation loads.
+6. **Timeline Logging (Audit Trail)**: Constructs case timelines dynamically from recorded `CaseActivity` rows.
+7. **Cases Dashboard View**: Built a premium `/cases` interface showing total/active/archived case counts, priority tags, and paginated linked artifact workspaces.
+8. **Interactive Add To Case triggers**: Integrated quick triggers directly in `dashboard.html` (search, sentiment, evolution), `research.html` (comparisons), and `exports.html` (exported dossiers).
+9. **Automated Integration Suite**: Created `scripts/verify_cases.py` confirming CRUD operations, statistics correctness, pagination load benchmarks (`~7.74 ms` for 500 items), archive lockouts, and duplicate link blocks. All tests passing cleanly.
