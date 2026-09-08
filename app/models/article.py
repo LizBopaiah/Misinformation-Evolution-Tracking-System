@@ -8,13 +8,17 @@ class Article(db.Model):
     title = db.Column(db.String(256), nullable=False, index=True)
     content = db.Column(db.Text, nullable=False)
     source = db.Column(db.String(120), nullable=True)
-    url = db.Column(db.String(512), unique=True, nullable=True, index=True)
+    url = db.Column(db.String(512), unique=False, nullable=True, index=True)
     published_at = db.Column(db.DateTime, nullable=True)
     search_id = db.Column(db.Integer, db.ForeignKey('search_history.id', ondelete='CASCADE'), nullable=True, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=True, index=True)
     content_hash = db.Column(db.String(64), nullable=True, index=True)
     created_at = db.Column(db.DateTime, default=db.func.now(), nullable=False)
     updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now(), nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint('search_id', 'url', name='uq_search_article_url'),
+    )
 
     # Relationships (defining foreign_keys explicitly for evolution mapping to avoid circular ambiguity)
     fact_checks = db.relationship('FactCheckResult', backref='article', lazy=True, cascade="all, delete-orphan")

@@ -142,6 +142,21 @@ class ExportService:
             self._write_file_from_snapshot(record)
             record.status = 'completed'
             db.session.commit()
+
+            # Automatically guarantee a copy in user's local Downloads folder
+            try:
+                import shutil
+                dl_folders = [
+                    os.path.expanduser(r'~\Downloads'),
+                    r'C:\Users\laksh\Downloads',
+                    r'C:\Users\laksh\workspace\Downloads'
+                ]
+                for dl_dir in dl_folders:
+                    if os.path.exists(dl_dir) and os.path.exists(record.file_path):
+                        shutil.copyfile(record.file_path, os.path.join(dl_dir, record.file_name))
+            except Exception:
+                pass
+
             return record
         except Exception as e:
             db.session.rollback()
@@ -312,7 +327,7 @@ class ExportService:
                 </table>
                 <div class="mt-4 p-4 bg-slate-50 rounded-xl">
                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Narrative Summary</h3>
-                    <p class="text-xs text-slate-650 leading-relaxed font-medium">{search['summary'] or 'No summary compiled.'}</p>
+                    <p class="text-xs text-slate-700 leading-relaxed font-medium">{search['summary'] or 'No summary compiled.'}</p>
                 </div>
             </div>
             """
@@ -350,7 +365,7 @@ class ExportService:
                 <div class="border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
                     <h3 class="text-sm font-bold text-slate-800">{art['title']}{fact_verdict}{emotion_tag}{cred_badge}</h3>
                     <p class="text-[10px] text-slate-400 font-mono mt-1">Source: {art['source']} | Published: {art['published_at'] or 'Unknown'}</p>
-                    <p class="text-xs text-slate-650 mt-2 line-clamp-3">{art['content'][:400]}...</p>
+                    <p class="text-xs text-slate-700 mt-2 line-clamp-3">{art['content'][:400]}...</p>
                 </div>
                 """
             body_content += "</div></div>"
@@ -367,7 +382,7 @@ class ExportService:
                 </table>
                 <div class="p-4 bg-slate-50 rounded-xl">
                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Evolution Summary</h3>
-                    <p class="text-xs text-slate-650 leading-relaxed font-medium">{evo['evolution_summary'] or 'No summary compiled.'}</p>
+                    <p class="text-xs text-slate-700 leading-relaxed font-medium">{evo['evolution_summary'] or 'No summary compiled.'}</p>
                 </div>
             </div>
             """
@@ -380,11 +395,11 @@ class ExportService:
                 <h2 class="text-lg font-bold text-slate-800 mb-2">Comparative Analytics Report</h2>
                 <table class="w-full text-sm mb-4">
                     <tr><td class="font-semibold text-slate-500 py-1" style="width: 30%;">Report Title:</td><td class="text-slate-800 font-bold py-1">{rep['report_name']}</td></tr>
-                    <tr><td class="font-semibold text-slate-500 py-1">Similarity Index:</td><td class="text-indigo-650 font-extrabold py-1">{comp.get('similarity_score', 0.0):.1f}/100</td></tr>
+                    <tr><td class="font-semibold text-slate-500 py-1">Similarity Index:</td><td class="text-indigo-600 font-extrabold py-1">{comp.get('similarity_score', 0.0):.1f}/100</td></tr>
                 </table>
                 <div class="p-4 bg-slate-50 rounded-xl">
                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Research Summary</h3>
-                    <p class="text-xs text-slate-650 leading-relaxed font-medium">{rep['summary'] or 'No summary compiled.'}</p>
+                    <p class="text-xs text-slate-700 leading-relaxed font-medium">{rep['summary'] or 'No summary compiled.'}</p>
                 </div>
             </div>
             """
@@ -412,7 +427,7 @@ class ExportService:
             <div class="card bg-white p-6 rounded-2xl border border-slate-100 mb-6">
                 <h2 class="text-lg font-bold text-slate-800 mb-2">AI Explainability & Model Governance</h2>
                 <table class="w-full text-sm mb-4">
-                    <tr><td class="font-semibold text-slate-500 py-1" style="width: 30%;">Confidence Level:</td><td class="text-indigo-650 font-extrabold py-1">{xai['confidence_level']} ({xai['confidence']:.1f}%)</td></tr>
+                    <tr><td class="font-semibold text-slate-500 py-1" style="width: 30%;">Confidence Level:</td><td class="text-indigo-600 font-extrabold py-1">{xai['confidence_level']} ({xai['confidence']:.1f}%)</td></tr>
                     <tr><td class="font-semibold text-slate-500 py-1">Model Name / Version:</td><td class="text-slate-800 py-1">{xai['model_name']} ({xai['model_version']})</td></tr>
                     <tr><td class="font-semibold text-slate-500 py-1">Vectorizer Version:</td><td class="text-slate-800 py-1">{xai['vectorizer_version']}</td></tr>
                     <tr><td class="font-semibold text-slate-500 py-1">Pipeline Version:</td><td class="text-slate-800 py-1">{xai['pipeline_version']}</td></tr>

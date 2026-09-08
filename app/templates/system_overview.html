@@ -342,7 +342,7 @@
             
             <div class="space-y-4">
                 <div class="flex gap-2">
-                    <button onclick="switchPreviewTab('fake_news')" id="tab-fake_news-btn" class="px-3 py-1 bg-indigo-600 text-white dark:bg-indigo-650 rounded-lg text-xs font-semibold">Fake News</button>
+                    <button onclick="switchPreviewTab('fake_news')" id="tab-fake_news-btn" class="px-3 py-1 bg-indigo-600 text-white dark:bg-indigo-600 rounded-lg text-xs font-semibold">Fake News</button>
                     <button onclick="switchPreviewTab('liar')" id="tab-liar-btn" class="px-3 py-1 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 rounded-lg text-xs font-semibold">LIAR</button>
                     <button onclick="switchPreviewTab('emotion')" id="tab-emotion-btn" class="px-3 py-1 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 rounded-lg text-xs font-semibold">Emotion</button>
                 </div>
@@ -361,7 +361,7 @@
                     <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
                     Operational Logger Output (application.log)
                 </h3>
-                <button onclick="Toast.show('Logging records refreshed.', 'success')" class="text-[10px] font-semibold text-indigo-500 hover:underline">Clear & Refresh</button>
+                <button onclick="Toast.show('Logging records refreshed.', 'success')" class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-[10px] font-bold flex items-center gap-1 transition-premium text-slate-700 dark:text-slate-300">Clear & Refresh</button>
             </div>
             <div class="bg-slate-950 text-slate-350 font-mono text-[10px] p-3 rounded-lg overflow-x-auto space-y-1 max-h-48 overflow-y-auto">
                 <p class="text-slate-500">[2026-06-06 20:42:01] INFO: MET application logging initialized.</p>
@@ -607,7 +607,7 @@
         tabs.forEach(t => {
             const btn = document.getElementById(`tab-${t}-btn`);
             if (t === tab) {
-                btn.className = "px-3 py-1 bg-indigo-600 text-white dark:bg-indigo-650 rounded-lg text-xs font-semibold";
+                btn.className = "px-3 py-1 bg-indigo-600 text-white dark:bg-indigo-600 rounded-lg text-xs font-semibold";
             } else {
                 btn.className = "px-3 py-1 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 rounded-lg text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700";
             }
@@ -627,7 +627,7 @@
             div.className = "p-3 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-100 dark:border-slate-850/80 flex flex-col gap-1.5";
             
             // Render label pill
-            let labelClass = "bg-slate-150 text-slate-650 dark:bg-slate-800 dark:text-slate-400";
+            let labelClass = "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300";
             if (sample.label === 'Fake' || sample.label === 'False') {
                 labelClass = "bg-rose-500/10 text-rose-500";
             } else if (sample.label === 'Real' || sample.label === 'True') {

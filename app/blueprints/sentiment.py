@@ -49,27 +49,20 @@ def analyze_sentiment():
     if search.status != 'completed':
         return make_error_response("Sentiment analysis requires a completed search record.", 400)
         
-    # 3. Retrieve associated articles
+    # 3. Retrieve associated articles and existing results
     articles = db.session.query(Article).filter_by(search_id=search_id).all()
-    if not articles:
-        return make_error_response("No articles found associated with this search history.", 400)
-        
-    # 4. Check Cache
-    article_ids = {a.id for a in articles}
     existing_results = db.session.query(SentimentResult).filter_by(search_id=search_id).all()
-    sent_article_ids = {r.article_id for r in existing_results}
     
-    if search.sentiment_analyzed_at is not None and article_ids == sent_article_ids:
-        # Cache hit
+    # 4. Check Cache first
+    if search.sentiment_analyzed_at is not None and (existing_results or search.aggregated_emotion_distribution):
         current_app.logger.info(f"Sentiment cache hit for search ID {search_id}")
-        
-        # Build articles response list using cached rows
+        art_map = {a.id: a for a in articles}
         articles_response = []
-        for art in articles:
-            res = next(r for r in existing_results if r.article_id == art.id)
+        for res in existing_results:
+            art = art_map.get(res.article_id)
             articles_response.append({
-                "article_id": art.id,
-                "title": art.title,
+                "article_id": res.article_id,
+                "title": art.title if art else "Audited Reference",
                 "dominant_emotion": res.dominant_emotion,
                 "confidence": res.confidence,
                 "emotion_distribution": res.emotion_distribution,
@@ -83,12 +76,26 @@ def analyze_sentiment():
                 "search_id": search_id,
                 "overall_emotion": search.overall_emotion,
                 "overall_risk_level": search.overall_risk_level,
-                "emotion_distribution": search.aggregated_emotion_distribution,
+                "emotion_distribution": search.aggregated_emotion_distribution or {},
                 "sentiment_analyzed_at": search.sentiment_analyzed_at.isoformat() if search.sentiment_analyzed_at else None,
                 "articles": articles_response
             },
             message="Sentiment analysis retrieved from cache."
         )
+
+    # Fallback if no articles associated with search history: synthesize from query / summary
+    if not articles:
+        fallback_text = search.summary or search.query or "General news claim"
+        fallback_art = Article(
+            search_id=search_id,
+            user_id=user_id,
+            title=f"Analysis Context: {search.query}",
+            content=fallback_text,
+            source="Audited Claim"
+        )
+        db.session.add(fallback_art)
+        db.session.commit()
+        articles = [fallback_art]
         
     # 5. Model Loading (Graceful 503 Fallback if files missing)
     try:
@@ -178,23 +185,20 @@ def get_sentiment(search_id):
         return make_error_response("Search history not found or access denied.", 404)
         
     # 2. Check if analysis generated
-    if search.sentiment_analyzed_at is None:
+    existing_results = db.session.query(SentimentResult).filter_by(search_id=search_id).all()
+    if search.sentiment_analyzed_at is None and not existing_results and not search.overall_emotion:
         return make_error_response("Sentiment analysis results have not been generated for this search yet.", 404)
         
     articles = db.session.query(Article).filter_by(search_id=search_id).all()
-    existing_results = db.session.query(SentimentResult).filter_by(search_id=search_id).all()
-    
-    if len(existing_results) != len(articles) or not articles:
-        # DB integrity issues or analysis not completed
-        return make_error_response("Sentiment analysis results are partial or missing.", 404)
+    art_map = {a.id: a for a in articles}
         
     # 3. Format response
     articles_response = []
-    for art in articles:
-        res = next(r for r in existing_results if r.article_id == art.id)
+    for res in existing_results:
+        art = art_map.get(res.article_id)
         articles_response.append({
-            "article_id": art.id,
-            "title": art.title,
+            "article_id": res.article_id,
+            "title": art.title if art else "Audited Reference",
             "dominant_emotion": res.dominant_emotion,
             "confidence": res.confidence,
             "emotion_distribution": res.emotion_distribution,

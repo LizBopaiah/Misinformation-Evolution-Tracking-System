@@ -4,8 +4,6 @@ from app.models.article import Article
 from app.models.fact_check import FactCheckResult
 from app.models.sentiment import SentimentResult
 from app.models.evolution import EvolutionResult
-from app.models.cluster import NarrativeCluster
-from app.models.log import SystemLog
 from app.models.report import ResearchReport, ComparisonResult
 from app.models.export import ExportRecord
 from app.models.case import InvestigationCase, CaseItem, CaseActivity
@@ -19,8 +17,6 @@ __all__ = [
     'FactCheckResult',
     'SentimentResult',
     'EvolutionResult',
-    'NarrativeCluster',
-    'SystemLog',
     'ResearchReport',
     'ComparisonResult',
     'ExportRecord',

@@ -77,7 +77,6 @@ def register_blueprints(app):
     """Registers authentication, profile, search layers, and frontend main pages"""
     from app.blueprints.auth import auth_bp
     from app.blueprints.user import user_bp
-    from app.blueprints.api import api_bp
     from app.blueprints.main import main_bp
     from app.blueprints.dataset import dataset_bp
     from app.blueprints.model import model_bp
@@ -93,7 +92,6 @@ def register_blueprints(app):
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(user_bp)
-    app.register_blueprint(api_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(dataset_bp)
     app.register_blueprint(model_bp)

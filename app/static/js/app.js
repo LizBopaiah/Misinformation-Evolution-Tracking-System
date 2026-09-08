@@ -150,3 +150,88 @@ const Loader = {
         }
     }
 };
+
+/**
+ * UI Component: Universal File Downloader & Local Disk Saver
+ */
+const DownloadManager = {
+    async download(url, filename) {
+        const token = localStorage.getItem('access_token');
+        let ext = 'pdf';
+        let mimeType = 'application/pdf';
+        let desc = 'PDF Document';
+
+        if (filename.endsWith('.png')) {
+            ext = 'png';
+            mimeType = 'image/png';
+            desc = 'PNG Image';
+        } else if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) {
+            ext = 'jpg';
+            mimeType = 'image/jpeg';
+            desc = 'JPEG Image';
+        }
+
+        Loader.show();
+        try {
+            const separator = url.includes('?') ? '&' : '?';
+            const authUrl = token ? `${url}${separator}token=${encodeURIComponent(token)}` : url;
+            
+            const response = await fetch(authUrl, {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server returned HTTP ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            Loader.hide();
+
+            // 1. Try modern File System Access API (Prompts native Windows 'Save As' file dialog)
+            if (window.showSaveFilePicker) {
+                try {
+                    const acceptMap = {};
+                    acceptMap[mimeType] = [`.${ext}`];
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: filename,
+                        types: [{
+                            description: desc,
+                            accept: acceptMap
+                        }]
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    Toast.show(`Saved ${filename} directly to your selected folder!`, "success");
+                    return;
+                } catch (pickerErr) {
+                    if (pickerErr.name === 'AbortError') {
+                        Toast.show("Save cancelled.", "info");
+                        return;
+                    }
+                }
+            }
+
+            // 2. Standard Blob download fallback
+            const fileBlob = new Blob([blob], { type: mimeType });
+            const blobUrl = window.URL.createObjectURL(fileBlob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                window.URL.revokeObjectURL(blobUrl);
+                if (a.parentNode) a.parentNode.removeChild(a);
+            }, 4000);
+            Toast.show(`Saved ${filename} to your Downloads folder!`, "success");
+        } catch (err) {
+            Loader.hide();
+            console.error("Download manager error:", err);
+            const separator = url.includes('?') ? '&' : '?';
+            const authUrl = token ? `${url}${separator}token=${encodeURIComponent(token)}` : url;
+            window.location.href = authUrl;
+        }
+    }
+};

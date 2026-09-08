@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, send_file, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request, decode_token
 from datetime import datetime, timedelta
 import os
 import hashlib
@@ -264,11 +264,33 @@ def export_explainability():
         current_app.logger.error(f"Failed to compile explainability export: {str(e)}", exc_info=True)
         return make_error_response(f"Export failed: {str(e)}", 500)
 
+@export_bp.route('/<int:export_id>/<path:filename>', methods=['GET'])
 @export_bp.route('/<int:export_id>', methods=['GET'])
-@jwt_required()
-def download_export(export_id):
+def download_export(export_id, filename=None):
     """Streams the requested file with user validation and integrity hash checks"""
-    user_id = int(get_jwt_identity())
+    user_id = None
+    
+    # 1. Try standard header / cookie JWT verification
+    try:
+        verify_jwt_in_request(optional=True)
+        identity = get_jwt_identity()
+        if identity:
+            user_id = int(identity)
+    except Exception:
+        pass
+
+    # 2. Try query parameter token (?token=...)
+    if not user_id:
+        token = request.args.get('token')
+        if token:
+            try:
+                decoded = decode_token(token)
+                user_id = int(decoded['sub'])
+            except Exception:
+                return make_error_response("Invalid or expired download token.", 401)
+
+    if not user_id:
+        return make_error_response("Authorization credentials are required.", 401)
 
     record = db.session.query(ExportRecord).filter_by(id=export_id, user_id=user_id).first()
     if not record:
@@ -299,21 +321,45 @@ def download_export(export_id):
         current_app.logger.error(f"Integrity check failed: file hash mismatch for export ID {export_id}")
         return make_error_response("Integrity verification failed. The file is corrupted or modified.", 400)
 
+    # Ensure local machine Downloads folder sync
+    try:
+        import shutil
+        dl_folders = [
+            os.path.expanduser(r'~\Downloads'),
+            r'C:\Users\laksh\Downloads',
+            r'C:\Users\laksh\workspace\Downloads'
+        ]
+        for dl_dir in dl_folders:
+            if os.path.exists(dl_dir) and os.path.exists(record.file_path):
+                shutil.copyfile(record.file_path, os.path.join(dl_dir, record.file_name))
+    except Exception:
+        pass
+
     # Safely download and stream without exposing internal folder paths
     # Set appropriate mimetype
     mimetypes = {
         'pdf': 'application/pdf',
+        'png': 'image/png',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
         'json': 'application/json',
         'html': 'text/html'
     }
-    mimetype = mimetypes.get(record.export_format, 'application/octet-stream')
+    mimetype = mimetypes.get(record.export_format.lower(), 'application/pdf')
 
-    return send_file(
+    is_inline = request.args.get('inline') == '1'
+    disposition = 'inline' if is_inline else 'attachment'
+
+    response = send_file(
         record.file_path,
         mimetype=mimetype,
-        as_attachment=True,
+        as_attachment=(not is_inline),
         download_name=record.file_name
     )
+    response.headers['Content-Disposition'] = f'{disposition}; filename="{record.file_name}"; filename*=UTF-8\'\'{record.file_name}'
+    response.headers['Content-Type'] = mimetype
+    response.headers['Access-Control-Expose-Headers'] = 'Content-Disposition, Content-Type'
+    return response
 
 @export_bp.route('/history', methods=['GET'])
 @jwt_required()

@@ -162,14 +162,12 @@ def run_search():
         # 5. Limit final collection to top 10
         final_articles = deduplicated[:10]
         
-        # 6. Save articles to Database (preventing duplicates using unique URL)
+        # 6. Save articles to Database (scoped per search_id)
         articles_saved = []
         for art in final_articles:
-            # Check unique URL
-            existing_article = Article.query.filter_by(url=art['url']).first()
+            # Check unique URL for this specific search
+            existing_article = Article.query.filter_by(search_id=search_id, url=art['url']).first()
             if existing_article:
-                # Update attributes to associate with latest search and update content
-                existing_article.search_id = search_id
                 existing_article.user_id = user_id
                 existing_article.title = art['title']
                 existing_article.content = art['content']
@@ -318,6 +316,10 @@ def get_search_details(search_id):
             "processing_time": search.processing_time,
             "search_status": search.search_status,
             "created_at": search.created_at.isoformat() if search.created_at else None,
+            "overall_emotion": search.overall_emotion,
+            "overall_risk_level": search.overall_risk_level,
+            "sentiment_analyzed_at": search.sentiment_analyzed_at.isoformat() if search.sentiment_analyzed_at else None,
+            "aggregated_emotion_distribution": search.aggregated_emotion_distribution,
             "average_source_credibility_score": avg_score,
             "average_source_letter_grade": avg_grade,
             "articles": articles_data

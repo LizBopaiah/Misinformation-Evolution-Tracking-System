@@ -49,12 +49,7 @@ def analyze_evolution():
     if search.status != 'completed':
         return make_error_response("Evolution analysis requires a completed search record.", 400)
 
-    # 3. Retrieve associated articles
-    articles = db.session.query(Article).filter_by(search_id=search_id).all()
-    if not articles:
-        return make_error_response("No articles found associated with this search history.", 400)
-
-    # 4. Check Cache
+    # 3. Check Cache first
     existing_res = db.session.query(EvolutionResult).filter_by(search_id=search_id).first()
     if existing_res:
         current_app.logger.info(f"Evolution cache hit for search ID {search_id}")
@@ -64,6 +59,11 @@ def analyze_evolution():
             data=data_response,
             message="Narrative evolution retrieved from cache."
         )
+
+    # 4. Retrieve associated articles
+    articles = db.session.query(Article).filter_by(search_id=search_id).all()
+    if not articles:
+        return make_error_response("No articles found associated with this search history.", 400)
 
     # 5. Run analysis pipeline
     try:

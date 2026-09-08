@@ -36,5 +36,5 @@ class ExportRecord(db.Model):
             'file_size': self.file_size,
             'file_hash': self.file_hash,
             'created_at': self.created_at.isoformat() if self.created_at else None,
-            'download_url': f"/api/export/{self.id}"
+            'download_url': f"/api/export/{self.id}/{self.file_name}"
         }

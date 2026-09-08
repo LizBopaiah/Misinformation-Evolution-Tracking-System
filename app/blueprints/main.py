@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, send_from_directory, current_app
+from flask import Blueprint, render_template, send_from_directory, current_app, redirect, url_for
 from app.blueprints.api import make_success_response
 import os
 
@@ -26,8 +26,8 @@ def dashboard():
 
 @main_bp.route('/research')
 def research_dashboard():
-    """Renders authenticated research comparison console"""
-    return render_template('research.html')
+    """Redirects deprecated research route to dashboard"""
+    return redirect(url_for('main.dashboard'))
 
 @main_bp.route('/profile')
 def profile_page():
@@ -36,13 +36,13 @@ def profile_page():
 
 @main_bp.route('/exports')
 def exports_page():
-    """Renders authenticated user exports dossier page"""
-    return render_template('exports.html')
+    """Redirects deprecated exports route to dashboard"""
+    return redirect(url_for('main.dashboard'))
 
 @main_bp.route('/cases')
 def cases_page():
-    """Renders authenticated case management workspace"""
-    return render_template('cases.html')
+    """Redirects deprecated cases route to dashboard"""
+    return redirect(url_for('main.dashboard'))
 
 @main_bp.route('/search-history')
 def search_history_page():
